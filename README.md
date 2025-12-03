@@ -1,16 +1,24 @@
-## Hi there 👋
+# Koło Fortuny – Warsztaty AI
 
-<!--
-**warsztaty01/warsztaty01** is a ✨ _special_ ✨ repository because its `README.md` (this file) appears on your GitHub profile.
+Interaktywna aplikacja webowa do losowania tematów projektów dla grup warsztatowych. Uczestnicy mogą zakręcić kołem, aby wylosować swój projekt wraz z mechaniką, wyzwaniem i twistem.
 
-Here are some ideas to get you started:
+## Jak uruchomić?
 
-- 🔭 I’m currently working on ...
-- 🌱 I’m currently learning ...
-- 👯 I’m looking to collaborate on ...
-- 🤔 I’m looking for help with ...
-- 💬 Ask me about ...
-- 📫 How to reach me: ...
-- 😄 Pronouns: ...
-- ⚡ Fun fact: ...
--->
+1. Otwórz plik `index.html` w przeglądarce.
+2. Kliknij przycisk „KRĘĆ KOŁEM!” aby wylosować temat.
+3. Po wylosowaniu temat znika z koła, aż do wyczerpania wszystkich tematów.
+
+## Technologie
+
+- HTML, CSS (Tailwind), JavaScript (Canvas)
+
+## Funkcje
+
+- Losowanie tematów projektów z koła fortuny
+- Animacja obrotu i efektów
+- Prezentacja szczegółów projektu po losowaniu
+- Responsywny design
+
+## Autor
+
+Warsztaty AI – summ-it s.a

@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Losowanie Tematu Warsztatów AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .wheel-container {
+            position: relative;
+            width: 455px;
+            height: 455px;
+            margin: 0 auto;
+        }
+        #pointer {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0; 
+            height: 0; 
+            border-left: 26px solid transparent;
+            border-right: 26px solid transparent;
+            border-top: 39px solid #ef4444; /* Czerwona strzałka */
+            z-index: 10;
+            filter: drop-shadow(0 2px 2px rgba(0,0,0,0.5));
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen flex flex-col items-center py-10">
+
+    <header class="text-center mb-8 px-4">
+        <h1 class="text-4xl font-bold text-blue-400 mb-2">Warsztaty AI</h1>
+        <p class="text-gray-400">Wylosuj projekt dla swojej grupy</p>
+    </header>
+
+    <main class="w-full max-w-4xl flex flex-col items-center gap-8">
+        
+        <!-- Sekcja Koła -->
+        <div class="wheel-container">
+            <div id="pointer"></div>
+            <canvas id="wheelCanvas" width="455" height="455"></canvas>
+        </div>
+
+        <button id="spinBtn" class="px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-bold rounded-full text-xl shadow-lg transform transition hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+            KRĘĆ KOŁEM!
+        </button>
+
+        <!-- Sekcja Wyniku -->
+        <div id="resultCard" class="hidden w-full max-w-2xl bg-gray-800 border border-gray-700 rounded-xl p-6 shadow-2xl transition-all duration-500 transform translate-y-4 opacity-0">
+            <h2 id="resultTitle" class="text-3xl font-bold text-yellow-400 mb-4 border-b border-gray-700 pb-2"></h2>
+            
+            <div class="grid md:grid-cols-2 gap-6">
+                <div>
+                    <h3 class="text-blue-300 font-bold mb-1 uppercase text-sm">Podstawowa Mechanika</h3>
+                    <p id="resultMechanics" class="text-gray-300 text-sm leading-relaxed"></p>
+                </div>
+                
+                <div>
+                    <h3 class="text-red-400 font-bold mb-1 uppercase text-sm">Główne Wyzwanie</h3>
+                    <p id="resultChallenge" class="text-gray-300 text-sm leading-relaxed"></p>
+                </div>
+            </div>
+
+            <div class="mt-4 bg-gray-700/50 p-4 rounded-lg">
+                <h3 class="text-green-400 font-bold mb-1 uppercase text-sm">Bonusowe Punkty (Twist)</h3>
+                <p id="resultBonus" class="text-gray-200 text-sm"></p>
+            </div>
+        </div>
+        
+        <div id="emptyMsg" class="hidden text-2xl text-gray-500 font-bold mt-10">
+            Wszystkie tematy zostały już przydzielone!
+        </div>
+
+    </main>
+
+    <script>
+        // --- DANE ---
+        const initialData = [
+            {
+                title: "Kosmiczny Najeźdźca",
+                color: "#3B82F6", // blue-500
+                mechanics: "Strzelanka z dołu do góry. Zarządzanie tablicą wrogów i pocisków. Wymaga obsługi kolizji i poruszania się 'gridu' wrogów.",
+                challenge: "Synchronizacja ruchu grupy wrogów (wszyscy w prawo, potem w dół) oraz czyszczenie pamięci (usuwanie pocisków, które wyleciały poza ekran).",
+                bonus: "Wrogowie strzelają losowo w gracza; dodanie niszczalnych bunkrów osłonowych lub przelatującego UFO."
+            },
+            {
+                title: "Nieskończony Biegacz",
+                color: "#10B981", // emerald-500
+                mechanics: "Postać biegnie w miejscu, tło przesuwa się w lewo. Skakanie nad przeszkodami generowanymi losowo.",
+                challenge: "Płynna fizyka skoku (grawitacja, a nie teleportacja góra/dół) oraz precyzyjne hitboxy kolizji (by nie ginąć od powietrza).",
+                bonus: "Podwójny skok (double jump), mechanika kucania pod ptakami, efekt paralaksy tła (różne prędkości warstw)."
+            },
+            {
+                title: "Zbijanie Cegieł",
+                color: "#F59E0B", // amber-500
+                mechanics: "Paletka odbija piłkę, niszcząc statyczną siatkę cegieł. Piłka nie może spaść poniżej paletki.",
+                challenge: "Obliczanie kątów odbicia – piłka powinna zmieniać kąt w zależności od miejsca uderzenia w paletkę. Unikanie 'przyklejania się' piłki.",
+                bonus: "Power-upy (np. Multiball - 3 piłki naraz), zmiana rozmiaru paletki, cegły wymagające 2 uderzeń."
+            },
+            {
+                title: "Lądownik",
+                color: "#8B5CF6", // violet-500
+                mechanics: "Lądowanie statkiem z użyciem silnika hamującego grawitację. Należy wylądować powoli.",
+                challenge: "Fizyka bezwładności (inercja) – statek nie zatrzymuje się od razu. Sprawdzanie prędkości pionowej przy przyziemieniu (za szybko = wybuch).",
+                bonus: "Ograniczony pasek paliwa, proceduralny generator terenu (góry/doliny), wiatr spychający statek."
+            },
+            {
+                title: "Frogger",
+                color: "#EC4899", // pink-500
+                mechanics: "Przejście żabą przez ulicę z wieloma pasami ruchu. Unikanie samochodów jadących z różną prędkością.",
+                challenge: "Generowanie ciągłego ruchu na wielu pasach bez nakładania się aut na siebie. Prawidłowy reset gry po kolizji.",
+                bonus: "Druga faza z rzeką i kłodami (ruchome platformy), limit czasu na przejście, bonusowe punkty do zebrania na mapie."
+            }
+        ];
+
+        let segments = [...initialData];
+        
+        // --- KONFIGURACJA CANVAS ---
+        const canvas = document.getElementById('wheelCanvas');
+        const ctx = canvas.getContext('2d');
+        const spinBtn = document.getElementById('spinBtn');
+        const resultCard = document.getElementById('resultCard');
+        
+        let currentAngle = 0; // Aktualny kąt obrotu koła
+        let isSpinning = false;
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const radius = canvas.width / 2 - 10; // Margines
+
+        // --- RYSOWANIE KOŁA ---
+        function drawWheel() {
+            if (segments.length === 0) return;
+
+            const arcSize = (2 * Math.PI) / segments.length;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            segments.forEach((segment, i) => {
+                const angle = currentAngle + i * arcSize;
+                
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.arc(centerX, centerY, radius, angle, angle + arcSize);
+                ctx.fillStyle = segment.color;
+                ctx.fill();
+                ctx.stroke();
+                ctx.save();
+
+                // Tekst
+                ctx.translate(centerX, centerY);
+                ctx.rotate(angle + arcSize / 2);
+                ctx.textAlign = "right";
+                ctx.fillStyle = "#fff";
+                ctx.font = "bold 14px Arial";
+                ctx.fillText(segment.title, radius - 20, 5);
+                ctx.restore();
+            });
+            
+            // Obramowanie koła
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+            ctx.lineWidth = 5;
+            ctx.strokeStyle = '#fff';
+            ctx.stroke();
+            
+            // Środek koła (ozdobny)
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 20, 0, 2 * Math.PI);
+            ctx.fillStyle = '#fff';
+            ctx.fill();
+        }
+
+        // --- LOGIKA LOSOWANIA ---
+        function spin() {
+            if (isSpinning || segments.length === 0) return;
+            
+            // Ukryj poprzedni wynik
+            resultCard.classList.add('hidden');
+            resultCard.classList.remove('opacity-100', 'translate-y-0');
+            resultCard.classList.add('opacity-0', 'translate-y-4');
+
+            isSpinning = true;
+            spinBtn.disabled = true;
+
+            // Logika losowania:
+            // 1. Wybieramy losowy indeks ZWYCIĘZCĘ
+            const winnerIndex = Math.floor(Math.random() * segments.length);
+            
+            // 2. Obliczamy ile musimy się obrócić, żeby ten segment wylądował na górze (-90 stopni / -PI/2)
+            // Kąt środka wybranego segmentu w lokalnym układzie (gdy currentAngle = 0)
+            const arcSize = (2 * Math.PI) / segments.length;
+            const segmentCenterAngle = winnerIndex * arcSize + arcSize / 2;
+            
+            // Chcemy, aby: finalAngle + segmentCenterAngle = -PI/2 (góra) + N * 2PI (wiele obrotów)
+            // Zatem: finalAngle = -PI/2 - segmentCenterAngle + N * 2PI
+            
+            const extraSpins = 5 + Math.floor(Math.random() * 3); // Minimum 5 pełnych obrotów
+            const targetRotation = (-Math.PI / 2) - segmentCenterAngle + (extraSpins * 2 * Math.PI);
+            
+            // Ponieważ currentAngle może być już duży, dodajemy go jako bazę, ale musimy zsynchronizować fazę
+            // Najprościej: Resetujemy currentAngle modulo 2PI do 0 wirtualnie, albo liczymy deltę.
+            // Zróbmy prościej: startujemy animację od currentAngle do targetRotation (skorygowanego o obecną pozycję)
+            
+            // Korekta: targetRotation musi być większy niż currentAngle
+            let finalTarget = targetRotation;
+            while(finalTarget < currentAngle) {
+                finalTarget += 2 * Math.PI;
+            }
+
+            const duration = 4000; // 4 sekundy
+            const startTime = performance.now();
+            const startAngle = currentAngle;
+
+            function animate(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                
+                // Easing function (easeOutCubic)
+                const ease = 1 - Math.pow(1 - progress, 3);
+                
+                currentAngle = startAngle + (finalTarget - startAngle) * ease;
+                drawWheel();
+
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    finishSpin(winnerIndex);
+                }
+            }
+            
+            requestAnimationFrame(animate);
+        }
+
+        function finishSpin(winnerIndex) {
+            isSpinning = false;
+            spinBtn.disabled = false;
+            
+            const winner = segments[winnerIndex];
+            
+            // Pokaż wynik
+            displayResult(winner);
+
+            // Usuń element z koła
+            segments.splice(winnerIndex, 1);
+
+            // Jeśli pusto
+            if (segments.length === 0) {
+                setTimeout(() => {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    document.getElementById('emptyMsg').classList.remove('hidden');
+                    spinBtn.classList.add('hidden');
+                    document.getElementById('pointer').classList.add('hidden');
+                }, 1000); // Małe opóźnienie żeby zobaczyć że zniknęło
+            } else {
+                // Reset kąta dla nowego układu koła (żeby nie skakało graficznie)
+                // Ponieważ zmieniamy liczbę segmentów, układ się zmienia. 
+                // Najlepiej zresetować kąt wizualnie lub ustawić go tak by wyglądało na kontynuację.
+                // Dla prostoty w tym demo: resetujemy lekko animację
+                currentAngle = 0; 
+                setTimeout(() => drawWheel(), 500); // Przerysuj z opóźnieniem
+            }
+        }
+
+        function displayResult(game) {
+            const title = document.getElementById('resultTitle');
+            const mechanics = document.getElementById('resultMechanics');
+            const challenge = document.getElementById('resultChallenge');
+            const bonus = document.getElementById('resultBonus');
+
+            title.innerText = game.title;
+            title.style.color = game.color;
+            mechanics.innerText = game.mechanics;
+            challenge.innerText = game.challenge;
+            bonus.innerText = game.bonus;
+
+            resultCard.classList.remove('hidden');
+            // Mały timeout dla animacji wejścia
+            setTimeout(() => {
+                resultCard.classList.remove('opacity-0', 'translate-y-4');
+                resultCard.classList.add('opacity-100', 'translate-y-0');
+            }, 50);
+        }
+
+        // Inicjalizacja
+        drawWheel();
+        spinBtn.addEventListener('click', spin);
+
+    </script>
+</body>
+</html>
