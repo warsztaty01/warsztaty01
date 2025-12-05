@@ -19,6 +19,7 @@ export default class Game{
     this.ufos = [];
 
     this.last = 0; this.running = false; this.score = 0;
+    this.gameOver = false;
     this.spawnInitial();
     this.setupInput();
   }
@@ -43,7 +44,7 @@ export default class Game{
 
   start(){ this.running = true; requestAnimationFrame(t=>this.loop(t)); }
 
-  restart(){ this.ship = new Ship(this.canvas.width/2,this.canvas.height/2); this.spawnInitial(); this.bullets=[]; this.score=0 }
+  restart(){ this.ship = new Ship(this.canvas.width/2,this.canvas.height/2); this.spawnInitial(); this.bullets=[]; this.score=0; this.gameOver = false; this.running = true; this.last = 0; }
 
   loop(ts){
     if(!this.last) this.last = ts; const dt = Math.min(0.05, (ts - this.last)/1000); this.last = ts;
@@ -52,10 +53,13 @@ export default class Game{
   }
 
   update(dt){
+    if(this.gameOver) return;
+
     // input
     if(KEYS['ArrowLeft']) this.ship.rotate(-1, dt);
     if(KEYS['ArrowRight']) this.ship.rotate(1, dt);
     if(KEYS['ArrowUp']) this.ship.applyThrust(220, dt);
+    if(KEYS['ArrowDown']) this.ship.applyThrust(-160, dt); // braking / reverse thrust
     if(KEYS['Space'] && !this._spaceDown){ this.fireBullet(); this._spaceDown = true; }
     if(!KEYS['Space']) this._spaceDown = false;
 
@@ -68,30 +72,49 @@ export default class Game{
     // bullets expiration
     this.bullets = this.bullets.filter(b=>b.life>0);
 
-    // bullet-asteroid collisions
+    // bullet-asteroid and bullet-UFO collisions
     for(let i=this.bullets.length-1;i>=0;i--){
       const b = this.bullets[i];
+      let removed = false;
       for(let j=this.asteroids.length-1;j>=0;j--){
         const a = this.asteroids[j];
         // quick circle test
         const dx = b.pos.x - a.pos.x, dy = b.pos.y - a.pos.y;
         if(Math.hypot(dx,dy) < a.radius + b.radius){
-          // hit
+          // hit asteroid
           this.bullets.splice(i,1);
           const newPieces = a.breakApart();
           this.asteroids.splice(j,1);
           this.asteroids.push(...newPieces);
           this.score += 50;
+          removed = true;
+          break;
+        }
+      }
+      if(removed) continue;
+      for(let j=this.ufos.length-1;j>=0;j--){
+        const u = this.ufos[j];
+        const dx = b.pos.x - u.pos.x, dy = b.pos.y - u.pos.y;
+        if(Math.hypot(dx,dy) < (u.size + b.radius)){
+          // hit UFO
+          this.bullets.splice(i,1);
+          this.ufos.splice(j,1);
+          this.score += 200;
+          removed = true;
           break;
         }
       }
     }
 
-    // ship-asteroid collision via SAT
+    // ship-asteroid collision via SAT (only first contact while not invulnerable)
     for(const a of this.asteroids){
-      if(polygonsCollide(this.ship.getPolygon(), a.getPolygon())){
+      if(this.ship.invulnerable <= 0 && polygonsCollide(this.ship.getPolygon(), a.getPolygon())){
         this.ship.lives -= 1; this.score = Math.max(0,this.score-200);
         this.ship.pos = {x:this.canvas.width/2,y:this.canvas.height/2}; this.ship.vel={x:0,y:0};
+        this.ship.onHit();
+        if(this.ship.lives <= 0){
+          this.endGame();
+        }
         break;
       }
     }
@@ -111,6 +134,11 @@ export default class Game{
     this.bullets.push(new Bullet(x,y,vel));
   }
 
+  endGame(){
+    this.running = false;
+    this.gameOver = true;
+  }
+
   draw(){
     const ctx = this.ctx; ctx.clearRect(0,0,this.canvas.width,this.canvas.height);
     // draw objects
@@ -121,5 +149,13 @@ export default class Game{
     // HUD
     document.getElementById('score').textContent = `Wynik: ${this.score}`;
     document.getElementById('lives').textContent = `Życia: ${this.ship.lives}`;
+
+    if(this.gameOver){
+      ctx.save();
+      ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(0,0,this.canvas.width,this.canvas.height);
+      ctx.fillStyle = '#ff6b6b'; ctx.font = '48px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText('KONIEC GRY', this.canvas.width/2, this.canvas.height/2);
+      ctx.restore();
+    }
   }
 }

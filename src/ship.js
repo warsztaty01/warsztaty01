@@ -8,6 +8,7 @@ export default class Ship{
     this.radius = 12;
     this.thrusting = false;
     this.lives = 3;
+    this.invulnerable = 0; // seconds remaining of invulnerability after hit
   }
 
   rotate(dir, dt){ this.angle += dir * 3 * dt; }
@@ -25,9 +26,15 @@ export default class Ship{
     this.pos.y += this.vel.y * dt;
     this.pos = wrapPosition(this.pos, bounds.width, bounds.height);
     this.thrusting = false;
+    if(this.invulnerable > 0) this.invulnerable = Math.max(0, this.invulnerable - dt);
   }
 
   draw(ctx){
+    // blink when invulnerable
+    if(this.invulnerable > 0){
+      const on = Math.floor(performance.now()/120) % 2 === 0;
+      if(!on) return; // skip draw on blink off
+    }
     ctx.save();
     ctx.translate(this.pos.x,this.pos.y);
     ctx.rotate(this.angle);
@@ -50,5 +57,9 @@ export default class Ship{
     const pts = [{x:15,y:0},{x:-10,y:-8},{x:-10,y:8}];
     return pts.map(p => ({x: this.pos.x + p.x * Math.cos(this.angle) - p.y * Math.sin(this.angle),
                          y: this.pos.y + p.x * Math.sin(this.angle) + p.y * Math.cos(this.angle)}));
+  }
+
+  onHit(){
+    this.invulnerable = 1.5;
   }
 }
