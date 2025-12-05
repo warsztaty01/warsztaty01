@@ -6,10 +6,12 @@
 // Canvas setup
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
+// Make canvas focusable and focus on click so keyboard controls reliably work
+canvas.addEventListener('click', () => canvas.focus());
 
 // Game constants
 const GRAVITY = 0.8;
-const JUMP_STRENGTH = 18;
+const JUMP_STRENGTH = 12; // reduced so character doesn't jump to the ceiling
 const GROUND_LEVEL = canvas.height - 60;
 const BASE_GAME_SPEED = 8;
 const OBSTACLE_SPAWN_RATE = 80; // frames between obstacles
@@ -42,6 +44,44 @@ const playSound = (frequency, duration, type = 'sine') => {
     }
 };
 
+// Player sprite support: load an image named `player.png` in the project root.
+// The loader removes near-white background pixels (simple background removal).
+let playerSprite = null;
+let playerSpriteLoaded = false;
+function loadPlayerSprite(src) {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+        const tmp = document.createElement('canvas');
+        tmp.width = img.width;
+        tmp.height = img.height;
+        const tctx = tmp.getContext('2d');
+        tctx.drawImage(img, 0, 0);
+        try {
+            const imgData = tctx.getImageData(0, 0, tmp.width, tmp.height);
+            const data = imgData.data;
+            for (let i = 0; i < data.length; i += 4) {
+                const r = data[i], g = data[i + 1], b = data[i + 2];
+                // if pixel is near-white, make it transparent (threshold adjustable)
+                if (r > 240 && g > 240 && b > 240) {
+                    data[i + 3] = 0;
+                }
+            }
+            tctx.putImageData(imgData, 0, 0);
+        } catch (e) {
+            // getImageData can throw if image tainted by CORS; fallback to raw image
+            console.warn('Could not process image for background removal:', e);
+        }
+        playerSprite = new Image();
+        playerSprite.onload = () => { playerSpriteLoaded = true; };
+        playerSprite.src = tmp.toDataURL();
+    };
+    img.onerror = () => { console.warn('Player sprite not found at', src); };
+    img.src = src;
+}
+// Try to load `player.png` automatically. Save attached image as `player.png` in project root.
+loadPlayerSprite('player.png');
+
 // ============================================================================
 // PLAYER CLASS - Dinosaur-like character
 // ============================================================================
@@ -59,7 +99,7 @@ class Player {
         this.crouchHeight = 35;
         
         this.jumpHoldTime = 0;
-        this.maxJumpHoldTime = 12; // frames to hold for max jump height
+        this.maxJumpHoldTime = 8; // frames to hold for max jump height (reduced)
         
         // Animation
         this.frameCounter = 0;
@@ -133,16 +173,30 @@ class Player {
     
     getHitbox() {
         const h = this.isCrouching ? this.crouchHeight : this.height;
+        // top of sprite is at (this.y - h)
+        const topY = this.y - h;
         return {
-            x: this.x + 8,
-            y: this.y + (this.isCrouching ? 20 : 0),
-            width: this.width - 16,
-            height: h - (this.isCrouching ? 20 : 0)
+            x: this.x + 6,
+            y: topY + (this.isCrouching ? 8 : 6),
+            width: this.width - 12,
+            height: h - (this.isCrouching ? 8 : 6)
         };
     }
     
     draw(ctx) {
         const hb = this.getHitbox();
+        // If a player sprite is loaded, draw it (with transparent background)
+        if (playerSpriteLoaded && playerSprite) {
+            const drawH = this.isCrouching ? this.crouchHeight : this.height;
+            // draw so the bottom of sprite touches the ground (this.y represents ground Y)
+            ctx.drawImage(playerSprite, this.x, this.y - drawH, this.width, drawH);
+            if (DEBUG_MODE) {
+                ctx.strokeStyle = '#ff00ff';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(hb.x, hb.y, hb.width, hb.height);
+            }
+            return;
+        }
         
         if (this.isCrouching) {
             // Crouching dinosaur
