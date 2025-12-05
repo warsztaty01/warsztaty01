@@ -195,8 +195,9 @@
     wind = Math.sin(windTimer * 0.35) * MAX_WIND * (0.6 + 0.4*Math.sin(windTimer*0.13));
 
     // update with precise collision detection (compute floorY from terrain and pass wind)
-    // call update and get impact info; update advanced ship.x to impactX if hit
-    const result = ship.update(dt, null, wind);
+    // call update and get impact info; provide current floorY at ship.x so update can detect impact
+    const currentFloorY = terrainAt(ship.x) - ship.height/2;
+    const result = ship.update(dt, currentFloorY, wind);
     if (result.hit && !ship.landed && !ship.crashed) {
       // compute terrain at impact X to get correct floorY
       const impactX = result.impactX !== undefined ? result.impactX : ship.x;
@@ -222,6 +223,27 @@
         ship.crashed = true;
         ship.thrusting = false;
         // spawn explosion
+        if (!explosion) {
+          explosion = { particles: [], time: 0 };
+          for (let i=0;i<36;i++) {
+            const ang = Math.random()*Math.PI*2;
+            const speed = 40 + Math.random()*160;
+            explosion.particles.push({ x: ship.x, y: ship.y, vx: Math.cos(ang)*speed, vy: Math.sin(ang)*speed, life: 0.9 + Math.random()*0.6 });
+          }
+        }
+      }
+    }
+    // Safety clamp: if update didn't detect collision (e.g. due to horizontal movement), ensure ship doesn't go below terrain at its current x
+    const groundYHere = terrainAt(ship.x) - ship.height/2;
+    if (!ship.landed && !ship.crashed && ship.y > groundYHere) {
+      // snap and decide crash/land based on current vertical speed
+      const impactVyNow = Math.abs(ship.vy);
+      ship.y = groundYHere;
+      if (impactVyNow <= SAFE_LANDING_VY) {
+        ship.vy = 0; ship.landed = true; ship.thrusting = false; ship._justLanded = true;
+        astronaut = { x: ship.x, y: ship.y - ship.height/2 + 2, progress: 0, state: 'exiting' };
+      } else {
+        ship.vy = 0; ship.crashed = true; ship.thrusting = false;
         if (!explosion) {
           explosion = { particles: [], time: 0 };
           for (let i=0;i<36;i++) {
