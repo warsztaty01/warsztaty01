@@ -49,12 +49,12 @@ export default class Game{
 
   start(){ this.running = true; requestAnimationFrame(t=>this.loop(t)); }
 
-  restart(){ this.ship = new Ship(this.canvas.width/2,this.canvas.height/2); this.spawnInitial(); this.bullets=[]; this.score=0; this.gameOver = false; this.running = true; this.last = 0; this.asteroidSpawnCooldown = 0; this.asteroidSpawnRate = 4.0; this.difficultyTimer = 0; this.difficultyMultiplier = 1; this.elapsedTime = 0; }
+  restart(){ this.ship = new Ship(this.canvas.width/2,this.canvas.height/2); this.spawnInitial(); this.bullets=[]; this.ufos=[]; this.score=0; this.gameOver = false; this.running = true; this.last = 0; this.asteroidSpawnCooldown = 0; this.asteroidSpawnRate = 4.0; this.difficultyTimer = 0; this.difficultyMultiplier = 1; this.elapsedTime = 0; }
 
   loop(ts){
     if(!this.last) this.last = ts; const dt = Math.min(0.05, (ts - this.last)/1000); this.last = ts;
     this.update(dt); this.draw();
-    if(this.running) requestAnimationFrame(t=>this.loop(t));
+    requestAnimationFrame(t=>this.loop(t));
   }
 
   update(dt){
