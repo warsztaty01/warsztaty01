@@ -102,11 +102,14 @@ class Player {
             this.isJumping = true;
             this.jumpCount = 1;
             this.jumpHoldTime = 0;
+            // initial jump impulse
+            this.velocityY = -JUMP_STRENGTH;
             playSound(440, 0.1, 'sine');
         } else if (this.jumpCount < 2) {
             this.jumpCount = 2;
             this.jumpHoldTime = 0;
-            this.velocityY = 0;
+            // double jump impulse
+            this.velocityY = -JUMP_STRENGTH;
             playSound(600, 0.1, 'sine');
         }
     }
@@ -432,77 +435,73 @@ class GameManager {
     
     setupKeyBindings() {
         document.addEventListener('keydown', (e) => {
-            this.keys[e.key.toLowerCase()] = true;
-            
-            // Jump keys
-            if ([' ', 'w', 'W', 'ArrowUp'].includes(e.key)) {
+            const key = (e.key || '').toLowerCase();
+            const code = e.code || '';
+
+            // normalize storage for space key
+            if (code === 'Space') {
+                this.keys['space'] = true;
+            } else {
+                this.keys[key] = true;
+            }
+
+            // Jump keys (Space, W, ArrowUp)
+            if (code === 'Space' || key === 'w' || key === 'arrowup') {
                 e.preventDefault();
                 if (this.state === 'playing') {
                     this.player.startJump();
+                } else if (this.state === 'menu') {
+                    // start game from menu with Space
+                    this.reset();
+                    this.state = 'playing';
                 }
             }
-            
-            // Crouch keys
-            if (['s', 'S', 'ArrowDown'].includes(e.key)) {
+
+            // Crouch keys (S or ArrowDown)
+            if (key === 's' || key === 'arrowdown' || code === 'ArrowDown') {
                 e.preventDefault();
                 if (this.state === 'playing') {
                     this.player.setCrouching(true);
                 }
             }
-            
+
             // Pause
-            if (e.key.toLowerCase() === 'p') {
-                if (this.state === 'playing') {
-                    this.state = 'paused';
-                } else if (this.state === 'paused') {
-                    this.state = 'playing';
-                }
+            if (key === 'p') {
+                if (this.state === 'playing') this.state = 'paused';
+                else if (this.state === 'paused') this.state = 'playing';
             }
-            
+
             // Restart
-            if (e.key.toLowerCase() === 'r') {
+            if (key === 'r') {
                 if (this.state === 'gameOver' || this.state === 'menu') {
                     this.reset();
                     this.state = 'playing';
                 }
             }
-            
+
             // Mute sound
-            if (e.key.toLowerCase() === 'm') {
-                isMuted = !isMuted;
-            }
-            
+            if (key === 'm') isMuted = !isMuted;
+
             // Debug: Speed adjustment
-            if (e.key === '[') {
-                this.gameSpeed = Math.max(0.2, this.gameSpeed - 0.1);
-            }
-            if (e.key === ']') {
-                this.gameSpeed = Math.min(2.0, this.gameSpeed + 0.1);
-            }
-            
-            // Start game from menu
-            if (this.state === 'menu' && e.key === ' ') {
-                e.preventDefault();
-                this.state = 'playing';
-                this.reset();
-            }
+            if (e.key === '[') this.gameSpeed = Math.max(0.2, this.gameSpeed - 0.1);
+            if (e.key === ']') this.gameSpeed = Math.min(2.0, this.gameSpeed + 0.1);
         });
-        
+
         document.addEventListener('keyup', (e) => {
-            this.keys[e.key.toLowerCase()] = false;
-            
+            const key = (e.key || '').toLowerCase();
+            const code = e.code || '';
+
+            if (code === 'Space') this.keys['space'] = false;
+            else this.keys[key] = false;
+
             // Release jump
-            if ([' ', 'w', 'W', 'ArrowUp'].includes(e.key)) {
-                if (this.state === 'playing') {
-                    this.player.releaseJump();
-                }
+            if (code === 'Space' || key === 'w' || key === 'arrowup') {
+                if (this.state === 'playing') this.player.releaseJump();
             }
-            
+
             // Crouch release
-            if (['s', 'S', 'ArrowDown'].includes(e.key)) {
-                if (this.state === 'playing') {
-                    this.player.setCrouching(false);
-                }
+            if (key === 's' || key === 'arrowdown' || code === 'ArrowDown') {
+                if (this.state === 'playing') this.player.setCrouching(false);
             }
         });
     }
@@ -519,8 +518,8 @@ class GameManager {
             // Update player
             this.player.update();
             
-            // Check if jump key is being held (keys map uses lowercase)
-            if (this.keys[' '] || this.keys['w'] || this.keys['arrowup']) {
+            // Check if jump key is being held (keys map uses normalized 'space')
+            if (this.keys['space'] || this.keys['w'] || this.keys['arrowup']) {
                 this.player.holdJump();
             }
             
