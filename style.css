@@ -1,19 +1,16 @@
-/* Podstawowy layout i styl dla płótna */
-html, body {
-  height: 100%;
-  margin: 0;
-  background: #111;
-  color: #eee;
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/* Prosty retro-styl i wyrównanie */
+:root {
+  --bg: #0a0f1f;
+  --hud: #b8e0ff;
+  --accent: #61dafb;
+  --status: #ffd270;
+  --shield: #3a945b;
 }
-
-
-
-
-
-
-
-canvas { width: 800px; height: 600px; }/* Upewnij się, że canvas nie skalowany przez przeglądarkę */}  image-rendering: optimizeQuality;  box-shadow: 0 0 20px rgba(0,0,0,0.6);  background: #000;n#gameCanvas {
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg); font-family: system-ui, Segoe UI, Roboto, Arial; color: var(--hud); }
+#game { display: block; margin: 40px auto; border: 2px solid #203a6b; background:
+  radial-gradient(1000px 600px at 50% -100px, #14223f 0%, var(--bg) 70%);
+}
+.hud { width: 800px; margin: 16px auto 0 auto; text-align: center; }
+.hud .row { display: flex; justify-content: space-between; font-weight: 600; }
+.status { margin-top: 6px; color: var(--status); font-weight: 700; letter-spacing: .5px; }

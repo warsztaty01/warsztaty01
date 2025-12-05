@@ -1,15 +1,24 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="pl">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Minimal Canvas Game (800x600)</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Kosmiczny Najeźdźca</title>
+  <link rel="stylesheet" href="style.css"/>
 </head>
 <body>
-  <!-- Płótno gry o stałym rozmiarze 800x600 -->
-  <canvas id="gameCanvas" width="800" height="600" aria-label="Canvas gry"></canvas>
-  <!-- Ładujemy moduł ES z implementacją App/GameLoop/Renderer -->
-  <script type="module" src="game.js"></script>
+  <div class="hud">
+    <div class="row">
+      <span id="score">Wynik: 0</span>
+      <span id="hiscore">Rekord: 0</span>
+      <span id="wave">Fala: 1</span>
+      <span id="lives">Życia: 3</span>
+    </div>
+    <div id="status" class="status">Naciśnij Spację, aby rozpocząć</div>
+  </div>
+ 
+  <canvas id="game" width="800" height="600"></canvas>
+ 
+  <script src="game.js"></script>
 </body>
 </html>
