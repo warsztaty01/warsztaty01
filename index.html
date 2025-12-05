@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Losowanie Tematu i Grupy - Warsztaty AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        
+        /* Kontener dla pojedynczego koła */
+        .wheel-wrapper {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .pointer {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0; 
+            height: 0; 
+            border-left: 20px solid transparent;
+            border-right: 20px solid transparent;
+            border-top: 30px solid #ef4444; /* Czerwona strzałka */
+            z-index: 10;
+            filter: drop-shadow(0 2px 2px rgba(0,0,0,0.5));
+        }
+
+        /* Mniejsza strzałka dla mniejszego koła */
+        .pointer-small {
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-top: 25px solid #fbbf24; /* Żółta strzałka */
+            top: -12px;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen flex flex-col items-center py-10">
+
+    <header class="text-center mb-8 px-4">
+        <h1 class="text-4xl font-bold text-blue-400 mb-2">Warsztaty AI</h1>
+        <p class="text-gray-400">Wylosuj projekt oraz grupę dla swojej grupy</p>
+    </header>
+
+    <main class="w-full max-w-6xl flex flex-col items-center gap-8 px-4">
+        
+        <!-- Kontener na dwa koła -->
+        <div class="flex flex-col md:flex-row gap-10 items-center justify-center w-full">
+            
+            <!-- Koło Tematów -->
+            <div class="flex flex-col items-center">
+                <h2 class="text-blue-300 font-bold mb-4 tracking-widest uppercase text-sm">Temat Projektu</h2>
+                <div class="wheel-wrapper" style="width: 400px; height: 400px;">
+                    <div class="pointer" id="pointerMain"></div>
+                    <canvas id="wheelCanvas" width="400" height="400"></canvas>
+                </div>
+            </div>
+
+            <!-- Koło Liczb -->
+            <div class="flex flex-col items-center">
+                <h2 class="text-yellow-300 font-bold mb-4 tracking-widest uppercase text-sm">Grupa (1-6)</h2>
+                <div class="wheel-wrapper" style="width: 250px; height: 250px;">
+                    <div class="pointer pointer-small" id="pointerSmall"></div>
+                    <canvas id="numberCanvas" width="250" height="250"></canvas>
+                </div>
+            </div>
+
+        </div>
+
+        <button id="spinBtn" class="mt-6 px-12 py-4 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 hover:from-blue-500 hover:to-pink-500 text-white font-bold rounded-full text-xl shadow-lg transform transition hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed border border-white/20">
+            KRĘĆ OBIEMA KOŁAMI!
+        </button>
+
+        <!-- Sekcja Wyniku -->
+        <div id="resultCard" class="hidden w-full max-w-3xl bg-gray-800 border border-gray-700 rounded-xl p-6 shadow-2xl transition-all duration-500 transform translate-y-4 opacity-0 relative overflow-hidden">
+            <!-- Tło ozdobne wyniku -->
+            <div class="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
+            
+            <div class="flex flex-col md:flex-row justify-between items-start border-b border-gray-700 pb-4 mb-4 gap-4">
+                <div>
+                    <span class="text-gray-400 text-xs uppercase tracking-wider">Wylosowany Temat</span>
+                    <h2 id="resultTitle" class="text-3xl font-bold text-white mt-1"></h2>
+                </div>
+                <div class="bg-gray-900 px-6 py-3 rounded-lg border border-gray-600 text-center min-w-[100px]">
+                    <span class="text-gray-400 text-xs uppercase tracking-wider block">Grupa</span>
+                    <span id="resultNumber" class="text-3xl font-bold text-yellow-400"></span>
+                </div>
+            </div>
+            
+            <div class="grid md:grid-cols-2 gap-6">
+                <div>
+                    <h3 class="text-blue-300 font-bold mb-1 uppercase text-sm">Podstawowa Mechanika</h3>
+                    <p id="resultMechanics" class="text-gray-300 text-sm leading-relaxed"></p>
+                </div>
+                
+                <div>
+                    <h3 class="text-red-400 font-bold mb-1 uppercase text-sm">Główne Wyzwanie</h3>
+                    <p id="resultChallenge" class="text-gray-300 text-sm leading-relaxed"></p>
+                </div>
+            </div>
+
+            <div class="mt-4 bg-gray-700/50 p-4 rounded-lg border border-gray-600/50">
+                <h3 class="text-green-400 font-bold mb-1 uppercase text-sm">Bonusowe Punkty (Twist)</h3>
+                <p id="resultBonus" class="text-gray-200 text-sm"></p>
+            </div>
+        </div>
+        
+        <div id="emptyMsg" class="hidden text-2xl text-gray-500 font-bold mt-10">
+            Wszystkie tematy zostały już przydzielone!
+        </div>
+
+    </main>
+
+    <script>
+        // --- DANE TEMATÓW ---
+        const initialData = [
+            {
+                title: "Kosmiczny Najeźdźca",
+                color: "#3B82F6", // blue-500
+                mechanics: "Strzelanka z dołu do góry. Zarządzanie tablicą wrogów i pocisków. Wymaga obsługi kolizji i poruszania się 'gridu' wrogów.",
+                challenge: "Synchronizacja ruchu grupy wrogów oraz czyszczenie pamięci (usuwanie pocisków).",
+                bonus: "Wrogowie strzelają losowo; dodanie niszczalnych bunkrów osłonowych."
+            },
+            {
+                title: "Nieskończony Biegacz",
+                color: "#10B981", // emerald-500
+                mechanics: "Postać biegnie w miejscu, tło przesuwa się w lewo. Skakanie nad przeszkodami generowanymi losowo.",
+                challenge: "Płynna fizyka skoku (grawitacja) oraz precyzyjne hitboxy kolizji.",
+                bonus: "Podwójny skok (double jump), mechanika kucania, efekt paralaksy tła."
+            },
+            {
+                title: "Zbijanie Cegieł",
+                color: "#F59E0B", // amber-500
+                mechanics: "Paletka odbija piłkę, niszcząc statyczną siatkę cegieł. Piłka nie może spaść poniżej paletki.",
+                challenge: "Obliczanie kątów odbicia w zależności od miejsca uderzenia w paletkę.",
+                bonus: "Power-upy (np. Multiball), zmiana rozmiaru paletki, cegły pancerne."
+            },
+            {
+                title: "Lądownik",
+                color: "#8B5CF6", // violet-500
+                mechanics: "Lądowanie statkiem z użyciem silnika hamującego grawitację. Należy wylądować powoli.",
+                challenge: "Fizyka bezwładności (inercja). Sprawdzanie prędkości pionowej przy przyziemieniu.",
+                bonus: "Ograniczony pasek paliwa, proceduralny generator terenu, wiatr."
+            },
+            {
+                title: "Frogger",
+                color: "#EC4899", // pink-500
+                mechanics: "Przejście przez ulicę z wieloma pasami ruchu. Unikanie samochodów jadących z różną prędkością.",
+                challenge: "Generowanie ciągłego ruchu na wielu pasach. Prawidłowy reset po kolizji.",
+                bonus: "Druga faza z rzeką i kłodami, limit czasu, znajdźki na mapie."
+            },
+            {
+                title: "Wąż (Snake)",
+                color: "#6366F1", // indigo-500
+                mechanics: "Sterowanie głową węża na siatce, reszta ciała podąża za nią. Zjadanie owoców wydłuża ogon.",
+                challenge: "Obsługa struktury danych ogona (kolejka pozycji) i wykrywanie kolizji z własnym ciałem.",
+                bonus: "Owoce dające różne efekty (np. przyspieszenie), teleporty na krawędziach mapy."
+            }
+        ];
+
+        // --- DANE LICZBOWE ---
+        const initialNumberData = [
+            { label: "1", color: "#374151" }, // gray-700
+            { label: "2", color: "#4B5563" }, // gray-600
+            { label: "3", color: "#374151" },
+            { label: "4", color: "#4B5563" },
+            { label: "5", color: "#374151" },
+            { label: "6", color: "#4B5563" }
+        ];
+
+        // Kopiujemy dane do zmiennych, które będziemy modyfikować (usuwać elementy)
+        let segments = [...initialData];
+        let numberSegments = [...initialNumberData];
+        
+        // --- KLASA STERUJĄCA POJEDYNCZYM KOŁEM ---
+        class WheelController {
+            constructor(canvasId, items, isTopicWheel = true) {
+                this.canvas = document.getElementById(canvasId);
+                this.ctx = this.canvas.getContext('2d');
+                this.items = items;
+                this.isTopicWheel = isTopicWheel;
+                this.currentAngle = 0;
+                this.centerX = this.canvas.width / 2;
+                this.centerY = this.canvas.height / 2;
+                this.radius = this.canvas.width / 2 - 10;
+            }
+
+            draw() {
+                if (this.items.length === 0) {
+                    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                    return;
+                }
+
+                const arcSize = (2 * Math.PI) / this.items.length;
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+                this.items.forEach((item, i) => {
+                    const angle = this.currentAngle + i * arcSize;
+                    
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(this.centerX, this.centerY);
+                    this.ctx.arc(this.centerX, this.centerY, this.radius, angle, angle + arcSize);
+                    this.ctx.fillStyle = item.color;
+                    this.ctx.fill();
+                    this.ctx.stroke();
+                    this.ctx.save();
+
+                    // Tekst
+                    this.ctx.translate(this.centerX, this.centerY);
+                    this.ctx.rotate(angle + arcSize / 2);
+                    this.ctx.textAlign = "right";
+                    this.ctx.fillStyle = "#fff";
+                    
+                    if (this.isTopicWheel) {
+                        this.ctx.font = "bold 14px Arial";
+                        this.ctx.fillText(item.title, this.radius - 20, 5);
+                    } else {
+                        // Większy font dla liczb
+                        this.ctx.font = "bold 24px Arial";
+                        this.ctx.fillText(item.label, this.radius - 30, 10);
+                    }
+                    this.ctx.restore();
+                });
+                
+                // Obramowanie
+                this.ctx.beginPath();
+                this.ctx.arc(this.centerX, this.centerY, this.radius, 0, 2 * Math.PI);
+                this.ctx.lineWidth = 5;
+                this.ctx.strokeStyle = '#fff';
+                this.ctx.stroke();
+                
+                // Środek
+                this.ctx.beginPath();
+                this.ctx.arc(this.centerX, this.centerY, this.isTopicWheel ? 20 : 15, 0, 2 * Math.PI);
+                this.ctx.fillStyle = '#fff';
+                this.ctx.fill();
+            }
+
+            // Zwraca Promise, który rozwiązuje się po zakończeniu kręcenia, podając wylosowany element
+            spin(duration) {
+                return new Promise((resolve) => {
+                    if (this.items.length === 0) {
+                        resolve(null);
+                        return;
+                    }
+
+                    const winnerIndex = Math.floor(Math.random() * this.items.length);
+                    const arcSize = (2 * Math.PI) / this.items.length;
+                    const segmentCenterAngle = winnerIndex * arcSize + arcSize / 2;
+                    
+                    // Kalkulacja docelowego kąta
+                    const extraSpins = 5 + Math.floor(Math.random() * 3);
+                    const targetRotation = (-Math.PI / 2) - segmentCenterAngle + (extraSpins * 2 * Math.PI);
+                    
+                    let finalTarget = targetRotation;
+                    while(finalTarget < this.currentAngle) {
+                        finalTarget += 2 * Math.PI;
+                    }
+
+                    const startTime = performance.now();
+                    const startAngle = this.currentAngle;
+
+                    const animate = (currentTime) => {
+                        const elapsed = currentTime - startTime;
+                        const progress = Math.min(elapsed / duration, 1);
+                        const ease = 1 - Math.pow(1 - progress, 3); // EaseOutCubic
+                        
+                        this.currentAngle = startAngle + (finalTarget - startAngle) * ease;
+                        this.draw();
+
+                        if (progress < 1) {
+                            requestAnimationFrame(animate);
+                        } else {
+                            resolve({ item: this.items[winnerIndex], index: winnerIndex });
+                        }
+                    };
+                    
+                    requestAnimationFrame(animate);
+                });
+            }
+        }
+
+        // --- INICJALIZACJA ---
+        const topicWheel = new WheelController('wheelCanvas', segments, true);
+        const numberWheel = new WheelController('numberCanvas', numberSegments, false);
+        
+        const spinBtn = document.getElementById('spinBtn');
+        const resultCard = document.getElementById('resultCard');
+
+        topicWheel.draw();
+        numberWheel.draw();
+
+        // --- GŁÓWNA LOGIKA ---
+        spinBtn.addEventListener('click', async () => {
+            if (segments.length === 0 || numberSegments.length === 0) return;
+
+            // UI Reset
+            spinBtn.disabled = true;
+            resultCard.classList.add('hidden');
+            resultCard.classList.remove('opacity-100', 'translate-y-0');
+            resultCard.classList.add('opacity-0', 'translate-y-4');
+
+            // Uruchomienie obu kół naraz (Promise.all)
+            // Koło z liczbami kręci się trochę szybciej (3s), temat (4s)
+            const [topicResult, numberResult] = await Promise.all([
+                topicWheel.spin(4000),
+                numberWheel.spin(3000)
+            ]);
+
+            // Obsługa wyniku
+            if (topicResult && numberResult) {
+                displayResult(topicResult.item, numberResult.item);
+                
+                // Usuń wylosowane elementy z obu kół
+                segments.splice(topicResult.index, 1);
+                numberSegments.splice(numberResult.index, 1);
+                
+                // Przerysuj koła po chwili, resetując kąt wizualnie dla płynności
+                setTimeout(() => {
+                    // Sprawdzamy czy którykolwiek zbiór się wyczerpał (powinny jednocześnie, ale dla bezpieczeństwa ||)
+                    if (segments.length === 0 || numberSegments.length === 0) {
+                         // Wyczyść canvasy
+                         document.getElementById('wheelCanvas').getContext('2d').clearRect(0,0,350,350);
+                         document.getElementById('numberCanvas').getContext('2d').clearRect(0,0,250,250);
+                         
+                         // Pokaż komunikat końca
+                         document.getElementById('emptyMsg').classList.remove('hidden');
+                         
+                         // Ukryj elementy sterujące
+                         spinBtn.classList.add('hidden');
+                         document.getElementById('pointerMain').classList.add('hidden');
+                         document.getElementById('pointerSmall').classList.add('hidden');
+                    } else {
+                        // Reset kąta, aby nowe rozłożenie segmentów wyglądało dobrze
+                        topicWheel.currentAngle = 0;
+                        topicWheel.draw();
+
+                        numberWheel.currentAngle = 0;
+                        numberWheel.draw();
+                    }
+                }, 1000);
+            }
+
+            spinBtn.disabled = false;
+        });
+
+        function displayResult(game, numberObj) {
+            const title = document.getElementById('resultTitle');
+            const mechanics = document.getElementById('resultMechanics');
+            const challenge = document.getElementById('resultChallenge');
+            const bonus = document.getElementById('resultBonus');
+            const number = document.getElementById('resultNumber');
+
+            // Ustawienia tematu
+            title.innerText = game.title;
+            title.style.color = game.color;
+            mechanics.innerText = game.mechanics;
+            challenge.innerText = game.challenge;
+            bonus.innerText = game.bonus;
+
+            // Ustawienia liczby
+            number.innerText = numberObj.label;
+
+            resultCard.classList.remove('hidden');
+            setTimeout(() => {
+                resultCard.classList.remove('opacity-0', 'translate-y-4');
+                resultCard.classList.add('opacity-100', 'translate-y-0');
+            }, 50);
+        }
+
+    </script>
+</body>
+</html>
