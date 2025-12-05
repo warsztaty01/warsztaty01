@@ -100,12 +100,14 @@ class Ship {
           fuelUsed += this.lateralFuelConsumption * tHit;
         }
         this.fuel = Math.max(0, this.fuel - fuelUsed);
-        // set to impact state
+        // compute impact position at time tHit
+        const impactX = this.x + this.vx * tHit;
+        const impactY = y0 + vy0 * tHit + 0.5 * a * tHit * tHit;
+        // set to impact state (position and velocity at impact)
         this.vy = vyAtHit;
-        this.y = floorY;
-        // advance horizontal position linearly for the full dt (ship still moves horizontally during step)
-        this.x += this.vx * dt;
-        return { hit: true, tHit, vyAtHit };
+        this.x = impactX;
+        this.y = impactY;
+        return { hit: true, tHit, vyAtHit, impactX, impactY };
       }
     }
 

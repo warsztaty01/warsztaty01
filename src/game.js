@@ -6,12 +6,10 @@
     canvas.width = Math.floor(window.innerWidth);
     canvas.height = Math.floor(window.innerHeight * 0.72);
     // regenerate stars and craters to fit new size
-    generateStars(Math.round(canvas.width/6));
-    generateCraters();
-    generateTerrain();
+    // generateStars/terrain will be called once after all helpers exist
   }
   window.addEventListener('resize', resize);
-  resize();
+  // initial resize will be called after generators are defined
 
   // Start higher (smaller y) so the ship falls longer on load
   const ship = new Ship(canvas.width/2, 30);
@@ -60,7 +58,7 @@
       terrain.points.push({x, y});
     }
   }
-  generateTerrain();
+  // generateTerrain() will be called after initial resize
 
   // astronaut that exits after safe landing
   let astronaut = null;
@@ -85,7 +83,11 @@
       craters.push({x: cx, y: floorTop + Math.random()*18, r});
     }
   }
+  // now it's safe to initialize sizes and generate terrain/stars
+  resize();
+  generateTerrain();
   generateCraters();
+  generateStars(Math.round(canvas.width/6));
 
   let last = performance.now();
 
@@ -187,15 +189,21 @@
   function loop(now) {
     const dt = Math.min(0.05, (now - last) / 1000); // clamp dt to avoid big jumps
     last = now;
+    try {
     // update wind (slowly varying)
     windTimer += dt;
     wind = Math.sin(windTimer * 0.35) * MAX_WIND * (0.6 + 0.4*Math.sin(windTimer*0.13));
 
     // update with precise collision detection (compute floorY from terrain and pass wind)
-    const terrainY = terrainAt(ship.x);
-    const floorY = terrainY - ship.height/2;
-    const result = ship.update(dt, floorY, wind);
+    // call update and get impact info; update advanced ship.x to impactX if hit
+    const result = ship.update(dt, null, wind);
     if (result.hit && !ship.landed && !ship.crashed) {
+      // compute terrain at impact X to get correct floorY
+      const impactX = result.impactX !== undefined ? result.impactX : ship.x;
+      const terrainYAtImpact = terrainAt(impactX);
+      const floorY = terrainYAtImpact - ship.height/2;
+      // snap ship to terrain surface
+      ship.y = floorY;
       // check landing speed at impact
       const impactVy = Math.abs(result.vyAtHit);
       if (impactVy <= SAFE_LANDING_VY) {
@@ -208,7 +216,6 @@
           progress: 0,
           state: 'exiting'
         };
-        // show success image or fallback; we simply set a flag and draw in main loop
         ship._justLanded = true;
       } else {
         ship.vy = 0;
@@ -276,6 +283,16 @@
     }
     drawDebug();
     drawFuelBar();
+
+    } catch (err) {
+      // log and show error overlay so it's visible instead of a silent black screen
+      console.error('Game loop error:', err);
+      ctx.fillStyle = 'black'; ctx.fillRect(0,0,canvas.width,canvas.height);
+      ctx.fillStyle = 'white'; ctx.font = '16px monospace'; ctx.textAlign = 'left';
+      const lines = (err && err.stack) ? String(err.stack).split('\n') : [String(err)];
+      for (let i=0;i<Math.min(lines.length, 12); i++) ctx.fillText(lines[i], 10, 30 + i*18);
+      return; // stop the loop
+    }
 
     requestAnimationFrame(loop);
   }
