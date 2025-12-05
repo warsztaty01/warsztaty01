@@ -51,11 +51,12 @@ let playerSpriteLoaded = false;
 function loadPlayerSprite(src) {
     const img = new Image();
     img.crossOrigin = 'anonymous';
+        const drawH = this.isCrouching ? this.crouchHeight : this.height;
+        const topY = this.y - drawH;
     img.onload = () => {
         const tmp = document.createElement('canvas');
-        tmp.width = img.width;
-        tmp.height = img.height;
-        const tctx = tmp.getContext('2d');
+            // draw so the bottom of sprite touches the ground (this.y represents ground Y)
+            ctx.drawImage(playerSprite, this.x, topY, this.width, drawH);
         tctx.drawImage(img, 0, 0);
         try {
             const imgData = tctx.getImageData(0, 0, tmp.width, tmp.height);
@@ -63,42 +64,64 @@ function loadPlayerSprite(src) {
             for (let i = 0; i < data.length; i += 4) {
                 const r = data[i], g = data[i + 1], b = data[i + 2];
                 // if pixel is near-white, make it transparent (threshold adjustable)
-                if (r > 240 && g > 240 && b > 240) {
-                    data[i + 3] = 0;
-                }
-            }
-            tctx.putImageData(imgData, 0, 0);
-        } catch (e) {
-            // getImageData can throw if image tainted by CORS; fallback to raw image
-            console.warn('Could not process image for background removal:', e);
-        }
-        playerSprite = new Image();
-        playerSprite.onload = () => { playerSpriteLoaded = true; };
-        playerSprite.src = tmp.toDataURL();
-    };
-    img.onerror = () => { console.warn('Player sprite not found at', src); };
-    img.src = src;
-}
-// Try to load `player.png` automatically. Save attached image as `player.png` in project root.
-loadPlayerSprite('player.png');
+        if (this.isCrouching) {
+            // Crouching dinosaur (vector fallback)
+            ctx.fillStyle = '#FF6B35';
+            const bodyHeight = Math.max(12, drawH - 6);
+            const bodyY = topY + (drawH - bodyHeight);
+            ctx.fillRect(this.x + 5, bodyY, this.width - 10, bodyHeight);
 
-// ============================================================================
-// PLAYER CLASS - Dinosaur-like character
-// ============================================================================
-class Player {
-    constructor() {
-        this.x = 50;
-        this.y = GROUND_LEVEL;
-        this.width = 45;
-        this.height = 55;
-        this.velocityY = 0;
-        
-        this.isJumping = false;
-        this.jumpCount = 0; // 0 = on ground, 1 = first jump, 2 = double jump
-        this.isCrouching = false;
-        this.crouchHeight = 35;
-        
-        this.jumpHoldTime = 0;
+            // Head
+            ctx.fillStyle = '#FF6B35';
+            ctx.fillRect(this.x + 30, topY + 6, 15, 12);
+
+            // Snout
+            ctx.fillStyle = '#FF8C42';
+            ctx.fillRect(this.x + 45, topY + 10, 8, 5);
+
+            // Eye
+            ctx.fillStyle = '#000';
+            ctx.fillRect(this.x + 38, topY + 8, 4, 4);
+        } else {
+            // Standing dinosaur with running animation (vector fallback)
+            ctx.fillStyle = '#FF6B35';
+            const bodyHeight = 30;
+            const bodyY = topY + (drawH - bodyHeight);
+            // Body
+            ctx.fillRect(this.x + 5, bodyY, this.width - 10, bodyHeight);
+            // Neck
+            ctx.fillRect(this.x + 20, bodyY - 7, 8, 7);
+            // Head
+            ctx.fillStyle = '#FF6B35';
+            ctx.fillRect(this.x + 15, topY, 18, 15);
+            // Snout
+            ctx.fillStyle = '#FF8C42';
+            ctx.fillRect(this.x + 33, topY + 4, 10, 7);
+            // Eye
+            ctx.fillStyle = '#000';
+            ctx.fillRect(this.x + 28, topY + 2, 4, 4);
+            // Back leg (animated)
+            ctx.fillStyle = '#FF6B35';
+            const backLegOffset = this.animationFrame === 0 ? 8 : -4;
+            const legHeight = 18;
+            ctx.fillRect(this.x + 12, this.y - legHeight, 5, legHeight + backLegOffset);
+            // Front leg
+            const frontLegOffset = this.animationFrame === 0 ? -4 : 8;
+            ctx.fillRect(this.x + 30, this.y - legHeight, 5, legHeight + frontLegOffset);
+
+            // Tail
+            ctx.strokeStyle = '#FF6B35';
+            ctx.lineWidth = 6;
+            ctx.beginPath();
+            ctx.quadraticCurveTo(this.x + 40, topY + 20, this.x + 55, topY + 10);
+            ctx.stroke();
+
+            // Draw hitbox if in debug mode
+            if (DEBUG_MODE) {
+                ctx.strokeStyle = '#ff00ff';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(hb.x, hb.y, hb.width, hb.height);
+            }
         this.maxJumpHoldTime = 8; // frames to hold for max jump height (reduced)
         
         // Animation
@@ -724,7 +747,7 @@ class GameManager {
         ctx.fillStyle = '#8B4513';
         ctx.font = 'bold 48px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText('🦖 PREHISTORIC RUNNER 🦖', canvas.width / 2, canvas.height / 2 - 80);
+        ctx.fillText('🦖 ENDLESS RUNNER 🦖', canvas.width / 2, canvas.height / 2 - 80);
         
         ctx.font = 'bold 28px Arial';
         ctx.fillStyle = '#5a3a1a';
