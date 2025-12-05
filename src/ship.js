@@ -30,7 +30,7 @@ class Ship {
   // Update physics: gravity, velocity, position using constant-acceleration integration
   // dt in seconds. Optionally pass a floorY to detect and report collisions during the step.
   // Returns { hit: boolean, tHit?: number, vyAtHit?: number }
-  update(dt, floorY = null) {
+  update(dt, floorY = null, windX = 0) {
     // px/s^2 (tweakable)
     const GRAVITY = 180;
 

@@ -8,6 +8,7 @@
     // regenerate stars and craters to fit new size
     generateStars(Math.round(canvas.width/6));
     generateCraters();
+    generateTerrain();
   }
   window.addEventListener('resize', resize);
   resize();
@@ -30,6 +31,36 @@
     }
   }
   generateStars(Math.round(canvas.width/6));
+  
+  // terrain
+  let terrain = { points: [], mode: 'plain', padX: canvas.width/2, padW: 140 };
+  function generateTerrain() {
+    const baseY = canvas.height - 60;
+    const step = 8;
+    terrain.points = [];
+    // pick mode randomly
+    terrain.mode = Math.random() > 0.5 ? 'mountains' : 'plain';
+    terrain.padX = canvas.width/2;
+    terrain.padW = 140;
+    // create wave parameters
+    const amp = terrain.mode === 'mountains' ? 60 + Math.random()*80 : 6 + Math.random()*12;
+    const freq = terrain.mode === 'mountains' ? 0.002 + Math.random()*0.008 : 0.01 + Math.random()*0.03;
+    const jitter = terrain.mode === 'mountains' ? 18 : 6;
+    for (let x = 0; x <= canvas.width; x += step) {
+      // ensure pad area is flat
+      const padL = terrain.padX - terrain.padW/2;
+      const padR = terrain.padX + terrain.padW/2;
+      let y = baseY + 20;
+      if (x >= padL && x <= padR) {
+        y = baseY + 8; // slightly raised pad top
+      } else {
+        const sine = Math.sin(x * freq) * amp;
+        y = baseY + 10 + sine + (Math.random()*jitter - jitter*0.5);
+      }
+      terrain.points.push({x, y});
+    }
+  }
+  generateTerrain();
 
   // astronaut that exits after safe landing
   let astronaut = null;
@@ -73,22 +104,41 @@
   }
 
   function drawGround() {
-    // moon-like surface
-    const h = 60;
-    const baseY = canvas.height - h;
-    // base surface
-    ctx.fillStyle = '#bdbdbd';
-    ctx.fillRect(0, baseY, canvas.width, h + 40);
-    // craters (darker)
+    // draw terrain polygon from terrain.points
+    ctx.fillStyle = '#bfbfbf';
+    ctx.beginPath();
+    ctx.moveTo(0, canvas.height);
+    for (let p of terrain.points) ctx.lineTo(p.x, p.y);
+    ctx.lineTo(canvas.width, canvas.height);
+    ctx.closePath();
+    ctx.fill();
+    // craters overlay
     for (let c of craters) {
       ctx.fillStyle = '#9f9f9f';
       ctx.beginPath(); ctx.ellipse(c.x, c.y, c.r, c.r*0.6, 0, 0, Math.PI*2); ctx.fill();
       ctx.fillStyle = 'rgba(255,255,255,0.03)'; ctx.beginPath(); ctx.ellipse(c.x - c.r*0.3, c.y - c.r*0.3, c.r*0.35, c.r*0.18,0,0,Math.PI*2); ctx.fill();
     }
-    // landing pad marker
+    // landing pad marker (ensure flat area exists in terrain generation)
     ctx.fillStyle = '#cfe';
-    const padW = 140; const padH = 8;
-    ctx.fillRect((canvas.width-padW)/2, baseY - padH/2, padW, padH);
+    const padW = terrain.padW; const padH = 8;
+    const padX = terrain.padX;
+    // find padY from terrain
+    const padY = terrainAt(padX);
+    ctx.fillRect((padX-padW)/2, padY - padH/2, padW, padH);
+  }
+
+  function terrainAt(x) {
+    // linear interpolate between nearest terrain.points
+    const pts = terrain.points;
+    if (!pts.length) return canvas.height - 60;
+    if (x <= 0) return pts[0].y;
+    if (x >= canvas.width) return pts[pts.length-1].y;
+    const step = pts[1].x - pts[0].x;
+    const i = Math.floor(x / step);
+    const a = pts[i];
+    const b = pts[Math.min(i+1, pts.length-1)];
+    const t = (x - a.x) / (b.x - a.x);
+    return a.y*(1-t) + b.y*t;
   }
 
   function drawDebug() {
@@ -126,6 +176,12 @@
 
   // explosion particles
   let explosion = null;
+  // load success image if present
+  const successImg = new Image();
+  let successLoaded = false;
+  successImg.onload = () => { successLoaded = true; };
+  successImg.onerror = () => { successLoaded = false; };
+  successImg.src = 'sukces.jpg';
 
 
   function loop(now) {
@@ -135,8 +191,9 @@
     windTimer += dt;
     wind = Math.sin(windTimer * 0.35) * MAX_WIND * (0.6 + 0.4*Math.sin(windTimer*0.13));
 
-    // update with precise collision detection (pass wind acceleration)
-    const floorY = canvas.height - 60 - ship.height/2;
+    // update with precise collision detection (compute floorY from terrain and pass wind)
+    const terrainY = terrainAt(ship.x);
+    const floorY = terrainY - ship.height/2;
     const result = ship.update(dt, floorY, wind);
     if (result.hit && !ship.landed && !ship.crashed) {
       // check landing speed at impact
@@ -151,6 +208,8 @@
           progress: 0,
           state: 'exiting'
         };
+        // show success image or fallback; we simply set a flag and draw in main loop
+        ship._justLanded = true;
       } else {
         ship.vy = 0;
         ship.crashed = true;
@@ -184,6 +243,21 @@
     drawBackground();
     drawGround();
     ship.draw(ctx);
+    // success image on safe landing
+    if (ship.landed) {
+      if (successLoaded) {
+        const iw = Math.min(360, canvas.width*0.6);
+        const ih = successImg.height * (iw / successImg.width || 1);
+        ctx.drawImage(successImg, (canvas.width-iw)/2, (canvas.height-ih)/2 - 20, iw, ih);
+      } else if (ship._justLanded) {
+        // fallback success badge
+        ctx.fillStyle = 'rgba(10,40,10,0.85)'; ctx.fillRect(canvas.width/2 - 180, canvas.height/2 - 80, 360, 120);
+        ctx.fillStyle = '#cfe'; ctx.font = '28px sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText('SUKCES — Gratulacje! Lądowanie udane', canvas.width/2, canvas.height/2 - 30);
+        ctx.fillStyle = '#9f9'; ctx.font = '20px monospace'; ctx.fillText('(Brak pliku sukces.jpg — dodaj do folderu, aby zobaczyć grafikę)', canvas.width/2, canvas.height/2 + 8);
+      }
+      ship._justLanded = false;
+    }
     // draw explosion overlay if crashed
     if (ship.crashed && explosion) {
       for (let p of explosion.particles) {
@@ -194,6 +268,12 @@
       ctx.fillStyle = 'rgba(120,10,10,0.08)'; ctx.fillRect(0,0,canvas.width,canvas.height);
     }
     if (astronaut) drawAstronaut(ctx, astronaut);
+    // crash message
+    if (ship.crashed) {
+      ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(0, canvas.height/2 - 50, canvas.width, 100);
+      ctx.fillStyle = '#ffdddd'; ctx.font = '28px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText('Jesteś fatalnym astronautą, zostań w IT', canvas.width/2, canvas.height/2 + 8);
+    }
     drawDebug();
     drawFuelBar();
 
