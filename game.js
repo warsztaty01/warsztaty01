@@ -1,17 +1,6 @@
 // ======================= CONFIG & STATE =======================
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
-
-// Paleta inspirowana Game Boy (4 poziomy zieleni)
-const P = {
-  DARK:  '#0f380f',
-  MED:   '#306230',
-  MID:   '#8bac0f',
-  LIGHT: '#9bbc0f'
-};
-
-// Wyłącz wygładzanie przy skalowaniu (pixelowy wygląd)
-ctx.imageSmoothingEnabled = false;
  
 const FEATURES = {
  shields: true,   // niezniszczalne bunkry
@@ -85,7 +74,7 @@ class Player {
    if (this.invulnMs > 0) this.invulnMs = Math.max(0, this.invulnMs - dt*1000);
  }
  render(ctx) {
-   ctx.fillStyle = (this.invulnMs > 0) ? P.LIGHT : P.MID;
+   ctx.fillStyle = (this.invulnMs > 0) ? '#b4ff9f' : '#fff';
    ctx.fillRect(this.x, this.y, this.width, this.height);
  }
 }
@@ -101,7 +90,7 @@ class Bullet {
  fire(x, y) { this.x = x; this.y = y; this.active = true; }
  update(dt) { if (this.active) this.y -= this.speed * dt; }
  isOffscreen() { return (this.y + this.height) < 0; }
- render(ctx) { if (this.active) { ctx.fillStyle = P.LIGHT; ctx.fillRect(this.x, this.y, this.width, this.height); } }
+ render(ctx) { if (this.active) { ctx.fillStyle = '#ffec70'; ctx.fillRect(this.x, this.y, this.width, this.height); } }
 }
 class BulletPool {
  constructor(max) { this.pool = Array.from({length: max}, () => new Bullet()); }
@@ -130,8 +119,8 @@ class Enemy {
  y(grid) { return this.baseY + grid.offsetY; }
  render(ctx, grid) {
    if (!this.alive) return;
-    ctx.fillStyle = P.MED;
-    ctx.fillRect(this.x(grid), this.y(grid), this.width, this.height);
+   ctx.fillStyle = '#6bf';
+   ctx.fillRect(this.x(grid), this.y(grid), this.width, this.height);
  }
 }
 class EnemyGrid {
@@ -210,7 +199,7 @@ class EnemyBullet {
  constructor(){ this.active=false; this.x=0; this.y=0; this.width=4; this.height=12; this.speed=340; }
  fire(x,y){ this.x=x; this.y=y; this.active=true; }
  update(dt){ if (this.active) { this.y += this.speed*dt; if (this.y > canvas.height) this.active=false; } }
-  render(ctx){ if (this.active){ ctx.fillStyle=P.MID; ctx.fillRect(this.x,this.y,this.width,this.height); } }
+ render(ctx){ if (this.active){ ctx.fillStyle='#ff6b6b'; ctx.fillRect(this.x,this.y,this.width,this.height); } }
 }
 class EnemyBulletPool {
  constructor(max){ this.pool = Array.from({length:max}, ()=>new EnemyBullet()); }
@@ -223,7 +212,7 @@ class EnemyBulletPool {
 // ======================= SHIELDS (BUNKRY) =======================
 class Shield {
  constructor(x,y,w=90,h=24){ this.x=x; this.y=y; this.w=w; this.h=h; }
-  render(ctx){ ctx.fillStyle = P.MED; ctx.fillRect(this.x,this.y,this.w,this.h); }
+ render(ctx){ ctx.fillStyle = '#3a945b'; ctx.fillRect(this.x,this.y,this.w,this.h); }
 }
 class ShieldManager {
  constructor(){ this.list=[]; }
@@ -250,7 +239,7 @@ class Ufo {
  constructor(){ this.active=false; this.x=-60; this.y=30; this.width=48; this.height=20; this.speed=180; this.dir=+1; this.scoreValue=150; }
  spawn(){ this.active=true; this.dir = Math.random()<0.5 ? +1 : -1; this.x = (this.dir===+1) ? -60 : canvas.width+60; this.y = 35 + Math.random()*25; }
  update(dt){ if (!this.active) return; this.x += this.dir*this.speed*dt; if (this.x<-80 || this.x>canvas.width+80) this.active=false; }
-  render(ctx){ if (!this.active) return; ctx.fillStyle=P.LIGHT; ctx.fillRect(this.x,this.y,this.width,this.height); }
+ render(ctx){ if (!this.active) return; ctx.fillStyle='#ff00bb'; ctx.fillRect(this.x,this.y,this.width,this.height); }
 }
 class UfoController {
  constructor(){ this.ufo = new Ufo(); this.timer=0; this.nextSpawnMs = 15000 + Math.random()*10000; }
@@ -382,12 +371,11 @@ function update(dt) {
 }
  
 function render(ctx) {
- // tło (czyścimy niską rozdzielczość canvasu)
- ctx.fillStyle = P.DARK;
- ctx.fillRect(0,0,canvas.width,canvas.height);
- // drobne "pikselowe" gwiazdki (używamy małych prostokątów)
- ctx.fillStyle = P.MED;
- for (let i=0;i<60;i++) ctx.fillRect((i*37)%canvas.width, (i*23)%canvas.height, 1, 1);
+ // tło
+ ctx.clearRect(0,0,canvas.width,canvas.height);
+ // drobne gwiazdy
+ ctx.fillStyle = '#123';
+ for (let i=0;i<80;i++) ctx.fillRect((i*97)%800, (i*53)%600, 2, 2);
  
  // obiekty gry
  enemyGrid.render(ctx);

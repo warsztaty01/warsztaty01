@@ -1,34 +1,16 @@
-/* Game Boy inspired style (zielona paleta, pixelated canvas) */
+/* Prosty retro-styl i wyrównanie */
 :root {
-  --gb-darkest: #0f380f; /* very dark green */
-  --gb-dark:    #306230; /* dark green */
-  --gb-mid:     #8bac0f; /* mid green */
-  --gb-light:   #9bbc0f; /* light green */
-  --bg:         #8fbf6f; /* page background (soft green) */
+  --bg: #0a0f1f;
+  --hud: #b8e0ff;
+  --accent: #61dafb;
+  --status: #ffd270;
+  --shield: #3a945b;
 }
 * { box-sizing: border-box; }
-html, body { margin: 0; height: 100%; background: linear-gradient(#0b2610, #18321a 60%); font-family: system-ui, Segoe UI, Roboto, Arial; color: var(--gb-darkest); }
-
-/* HUD (tekst nad ekranem) */
-.hud { width: 800px; margin: 18px auto 6px auto; text-align: center; color: var(--gb-light); font-weight: 700; }
-.hud .row { display: flex; justify-content: space-between; }
-.status { margin-top: 6px; color: var(--gb-mid); letter-spacing: .5px; }
-
-/* Canvas: logiczne 160x120, skalowane do 800x600 (x5) dla efektu pixelart */
-canvas#game {
-  display: block;
-  margin: 8px auto 36px auto;
-  width: 800px; /* skalowanie wizualne */
-  height: 600px; /* skalowanie wizualne */
-  image-rendering: pixelated; /* pixelated scaling */
-  background: var(--gb-darkest);
-  border: 14px solid #9aa76d; /* bezel */
-  border-radius: 12px;
-  box-shadow: 0 12px 30px rgba(0,0,0,0.6), inset 0 4px 0 rgba(255,255,255,0.03);
+html, body { margin: 0; height: 100%; background: var(--bg); font-family: system-ui, Segoe UI, Roboto, Arial; color: var(--hud); }
+#game { display: block; margin: 40px auto; border: 2px solid #203a6b; background:
+  radial-gradient(1000px 600px at 50% -100px, #14223f 0%, var(--bg) 70%);
 }
-
-/* Dodatkowa ramka przypominająca obudowę */
-.device { width: 840px; margin: 0 auto; }
-
-/* Mały reset dla elementów HUD w pobliżu */
-.hud span { font-size: 14px; }
+.hud { width: 800px; margin: 16px auto 0 auto; text-align: center; }
+.hud .row { display: flex; justify-content: space-between; font-weight: 600; }
+.status { margin-top: 6px; color: var(--status); font-weight: 700; letter-spacing: .5px; }
