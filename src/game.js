@@ -52,32 +52,34 @@
   }
 
   function drawFuelBar() {
-    const barW = 160; const barH = 10; const x = 18; const y = canvas.height - 30;
+    // vertical fuel bar at top-right
+    const barW = 14; const barH = 140; const x = canvas.width - 28; const y = 18;
     ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.fillRect(x-4,y-4,barW+8,barH+8);
     ctx.fillStyle = '#333'; ctx.fillRect(x,y,barW,barH);
     const perc = ship.fuel / ship.maxFuel;
     ctx.fillStyle = perc > 0.35 ? '#3fd' : '#ff8b4d';
-    ctx.fillRect(x,y,barW * perc, barH);
+    const fillH = Math.max(0, barH * perc);
+    ctx.fillRect(x, y + (barH - fillH), barW, fillH);
     ctx.strokeStyle = '#cfe'; ctx.strokeRect(x,y,barW,barH);
+    // label
+    ctx.fillStyle = '#cfe'; ctx.font = '12px monospace'; ctx.fillText('FUEL', x-38, y+barH/2+4);
   }
 
   function loop(now) {
     const dt = Math.min(0.05, (now - last) / 1000); // clamp dt to avoid big jumps
     last = now;
 
-    // update
-    ship.update(dt);
 
-    // floor collision and landing detection
+    // update with precise collision detection
     const floorY = canvas.height - 60 - ship.height/2;
-    if (ship.y > floorY && !ship.landed && !ship.crashed) {
-      // landed/crashed check based on vertical speed
-      if (Math.abs(ship.vy) <= SAFE_LANDING_VY) {
-        ship.y = floorY;
+    const result = ship.update(dt, floorY);
+    if (result.hit && !ship.landed && !ship.crashed) {
+      // check landing speed at impact
+      const impactVy = Math.abs(result.vyAtHit);
+      if (impactVy <= SAFE_LANDING_VY) {
         ship.vy = 0;
         ship.landed = true;
         ship.thrusting = false;
-        // spawn astronaut for exit animation
         astronaut = {
           x: ship.x,
           y: ship.y - ship.height/2 + 2,
@@ -85,7 +87,6 @@
           state: 'exiting'
         };
       } else {
-        ship.y = floorY;
         ship.vy = 0;
         ship.crashed = true;
         ship.thrusting = false;

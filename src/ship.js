@@ -21,26 +21,84 @@ class Ship {
     this.crashed = false;
   }
 
-  // Update physics: gravity, velocity, position
-  // dt in seconds
-  update(dt) {
-    // px/s^2 (tweakable) — zmniejszone, żeby spadek trwał dłużej
+  // Update physics: gravity, velocity, position using constant-acceleration integration
+  // dt in seconds. Optionally pass a floorY to detect and report collisions during the step.
+  // Returns { hit: boolean, tHit?: number, vyAtHit?: number }
+  update(dt, floorY = null) {
+    // px/s^2 (tweakable)
     const GRAVITY = 180;
-    // gravity accelerates downward (positive y)
-    this.vy += GRAVITY * dt;
 
-    // apply thrust if requested and we have fuel (thrusting reduces vy)
-    if (this.thrusting && this.fuel > 0 && !this.landed && !this.crashed) {
-      const accel = this.thrustPower; // upward
-      this.vy -= accel * dt;
-      // consume fuel
-      this.fuel -= this.fuelConsumption * dt;
-      if (this.fuel < 0) this.fuel = 0;
+    // determine thrust acceleration for this step (positive upward reduction)
+    const thrustActive = this.thrusting && this.fuel > 0 && !this.landed && !this.crashed;
+    const thrustAccel = thrustActive ? this.thrustPower : 0;
+
+    // total acceleration (positive increases downward velocity)
+    const a = GRAVITY - thrustAccel;
+
+    // previous state
+    const y0 = this.y;
+    const vy0 = this.vy;
+
+    // compute new velocity and position under constant acceleration
+    const vy1 = vy0 + a * dt;
+    const y1 = y0 + vy0 * dt + 0.5 * a * dt * dt;
+
+    // consume fuel for the actual thrust duration (we'll adjust if collision occurs)
+    let fuelUsed = 0;
+
+    // if floorY provided, check whether trajectory crosses the floor within dt
+    if (floorY !== null && y1 > floorY) {
+      // solve 0.5*a*t^2 + vy0*t + (y0 - floorY) = 0 for t in (0,dt]
+      const A = 0.5 * a;
+      const B = vy0;
+      const C = y0 - floorY;
+      let tHit = null;
+      if (Math.abs(A) < 1e-6) {
+        // linear case: vy0 * t + C = 0 -> t = -C/vy0
+        if (Math.abs(B) > 1e-6) {
+          const t = -C / B;
+          if (t >= 0 && t <= dt) tHit = t;
+        }
+      } else {
+        const disc = B*B - 4*A*C;
+        if (disc >= 0) {
+          const sqrtD = Math.sqrt(disc);
+          const tA = (-B - sqrtD) / (2*A);
+          const tB = (-B + sqrtD) / (2*A);
+          // choose the smallest positive root within (0,dt]
+          const candidates = [tA, tB].filter(t => t >= 0 && t <= dt);
+          if (candidates.length) tHit = Math.min(...candidates);
+        }
+      }
+
+      if (tHit !== null) {
+        // compute state at impact time
+        const vyAtHit = vy0 + a * tHit;
+        // consume fuel only for tHit duration
+        if (thrustActive) {
+          fuelUsed = this.fuelConsumption * tHit;
+          this.fuel = Math.max(0, this.fuel - fuelUsed);
+        }
+        // set to impact state
+        this.vy = vyAtHit;
+        this.y = floorY;
+        // advance horizontal position linearly
+        this.x += this.vx * dt;
+        return { hit: true, tHit, vyAtHit };
+      }
     }
 
-    // Integrate velocity to position
+    // no collision within this step: commit full step
+    this.vy = vy1;
+    this.y = y1;
     this.x += this.vx * dt;
-    this.y += this.vy * dt;
+
+    if (thrustActive) {
+      fuelUsed = this.fuelConsumption * dt;
+      this.fuel = Math.max(0, this.fuel - fuelUsed);
+    }
+
+    return { hit: false };
   }
 
   // Simple drawing: triangle representing the lander
