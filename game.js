@@ -34,7 +34,13 @@
     let total = 0, loaded = 0;
     // count entries
     function countEntries(obj){
-      let c=0; for(const k in obj){ if(Array.isArray(obj[k])) c += obj[k].length; else c++; } return c;
+      let c=0;
+      for(const k in obj){
+        if(Array.isArray(obj[k])) c += obj[k].length;
+        else if(typeof obj[k] === 'object') c += Object.keys(obj[k]).length;
+        else c++;
+      }
+      return c;
     }
     total = countEntries(list);
     // load each
@@ -96,6 +102,9 @@
     running = true;
     overlay.classList.add('hidden');
 
+    // initialize spawn timers per lane
+    initSpawnTimers();
+
     // create some obstacles on random grass zones (except bottom where player starts maybe)
     grassZones.forEach((g,gi)=>{
       const count = Math.random() < 0.6 ? 1 : 0;
@@ -129,31 +138,37 @@
   }
 
   // Spawn cars periodically per lane (attempt)
-  function trySpawn(dtAccum){
-    lanes.forEach((ln, idx)=>{
-      // spawn chance
-      const chance = 0.01 + Math.random()*0.02; // per frame-ish
-      if(Math.random() < chance){
-        const dir = ln.dir; // all cars in lane go same direction
-        const carImgs = images.cars.filter(img=>img.src.includes(dir));
-        const carImg = carImgs[Math.floor(Math.random()*carImgs.length)];
-        const w = 64, h = 40;
-        const y = ln.y + (ln.h - h)/2;
-        const speed = ln.speedBase * (0.6 + Math.random()*1.2);
-        let x = dir === 'right' ? -80 : W + 80;
+  // per-lane spawn timers to ensure independent spawn behavior
+  function initSpawnTimers(){
+    lanes.forEach(ln=>{ ln.spawnTimer = 0; ln.nextSpawn = 0.5 + Math.random()*1.5; });
+  }
 
-        // ensure spacing: find nearest car ahead in that direction
-        const laneCars = carsByLane[idx];
-        let canSpawn = true;
-        for(const c of laneCars){
-          if(dir==='right'){
-            if(c.x < 160) { canSpawn = false; break; }
-          } else {
-            if(c.x > W-160) { canSpawn = false; break; }
-          }
+  function trySpawn(dt){
+    lanes.forEach((ln, idx)=>{
+      ln.spawnTimer += dt;
+      if(ln.spawnTimer < ln.nextSpawn) return;
+      ln.spawnTimer = 0; ln.nextSpawn = 0.6 + Math.random()*1.8;
+
+      const dir = ln.dir;
+      const carImgs = images.cars.filter(img=> img.src.includes(dir));
+      const carImg = carImgs[Math.floor(Math.random()*carImgs.length)];
+      const w = 64, h = 40;
+      const y = ln.y + (ln.h - h)/2;
+      const baseSpeed = ln.speedBase * (0.6 + Math.random()*1.2);
+      const x = dir === 'right' ? -w - 10 : W + 10;
+
+      // ensure spacing within the lane only
+      const laneCars = carsByLane[idx];
+      const spawnBuffer = 140;
+      let blocked = false;
+      for(const c of laneCars){
+        if(dir === 'right'){
+          if(c.x < spawnBuffer) { blocked = true; break; }
+        } else {
+          if(c.x > W - spawnBuffer) { blocked = true; break; }
         }
-        if(canSpawn){ laneCars.push({x,y,w,h,speed,dir,img:carImg}); }
       }
+      if(!blocked){ laneCars.push({x,y,w,h,baseSpeed,dir,img:carImg}); }
     });
   }
 
@@ -167,37 +182,47 @@
       laneCars.sort((a,b)=> ln.dir==='right' ? a.x - b.x : b.x - a.x);
       for(let i=0;i<laneCars.length;i++){
         const car = laneCars[i];
-        // determine car ahead
+        const dirFactor = car.dir === 'right' ? 1 : -1;
+        const desired = car.x + dirFactor * car.baseSpeed * dt;
+
+        // determine lead car
         let lead = null;
         if(i>0) lead = laneCars[i-1];
-        // adjust speed to avoid overlapping lead car
+        const minGap = 20;
         if(lead){
-          const gap = ln.dir==='right' ? lead.x - car.x - car.w : car.x - lead.x - car.w;
-          const minGap = 30;
-          if(gap < minGap) { // slow down or stop
-            car.speed = Math.min(car.speed, 0);
+          if(car.dir === 'right'){
+            const allowed = lead.x - car.w - minGap;
+            car.x = Math.min(desired, allowed);
+          } else {
+            const allowed = lead.x + lead.w + minGap;
+            car.x = Math.max(desired, allowed);
           }
+        } else {
+          car.x = desired;
         }
-        // move
-        const move = (car.dir==='right' ? 1 : -1) * car.speed * dt;
-        car.x += move;
       }
       // remove offscreen
       for(let i=laneCars.length-1;i>=0;i--){
         const c = laneCars[i];
-        if(c.x < -200 || c.x > W + 200) laneCars.splice(i,1);
+        if(c.x < -300 || c.x > W + 300) laneCars.splice(i,1);
       }
     });
   }
 
   function update(dt){
     if(!running) return;
-    trySpawn();
+    trySpawn(dt);
     updateCars(dt);
 
     // check collisions with player
     for(const laneCars of carsByLane){
-      for(const c of laneCars){ if(rectsOverlap(c, player)) { gameOver(); return; } }
+      for(const c of laneCars){ if(rectsOverlap(c, player)) { gameOver('lose'); return; } }
+    }
+
+    // check if reached topmost safe grass -> win
+    if(grassZones.length){
+      const topGrass = grassZones[grassZones.length - 1];
+      if(player.y <= topGrass.y + 4){ gameOver('win'); return; }
     }
 
     // collect points
@@ -208,7 +233,13 @@
     }
   }
 
-  function gameOver(){ running = false; overlay.classList.remove('hidden'); }
+  function gameOver(kind){
+    running = false;
+    const title = document.getElementById('overlayTitle');
+    if(kind === 'win') title.textContent = `Wygrałeś! Punkty: ${score}`;
+    else title.textContent = `Przegrałeś! Punkty: ${score}`;
+    overlay.classList.remove('hidden');
+  }
 
   function render(){
     // background grass
