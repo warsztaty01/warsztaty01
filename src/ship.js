@@ -9,14 +9,34 @@ class Ship {
     this.angle = 0; // radians
     this.thrusting = false;
     this.mass = 1; // reserved for future use
+
+    // Fuel / thrust
+    this.maxFuel = 100; // units
+    this.fuel = this.maxFuel;
+    this.thrustPower = 420; // px/s^2 upward acceleration when thrusting
+    this.fuelConsumption = 22; // units per second while thrusting
+
+    // state flags
+    this.landed = false;
+    this.crashed = false;
   }
 
   // Update physics: gravity, velocity, position
   // dt in seconds
   update(dt) {
-    const GRAVITY = 400; // px/s^2 (tweakable)
+    // px/s^2 (tweakable) — zmniejszone, żeby spadek trwał dłużej
+    const GRAVITY = 180;
     // gravity accelerates downward (positive y)
     this.vy += GRAVITY * dt;
+
+    // apply thrust if requested and we have fuel (thrusting reduces vy)
+    if (this.thrusting && this.fuel > 0 && !this.landed && !this.crashed) {
+      const accel = this.thrustPower; // upward
+      this.vy -= accel * dt;
+      // consume fuel
+      this.fuel -= this.fuelConsumption * dt;
+      if (this.fuel < 0) this.fuel = 0;
+    }
 
     // Integrate velocity to position
     this.x += this.vx * dt;
@@ -50,12 +70,24 @@ class Ship {
     ctx.arc(0, -4, 6, 0, Math.PI*2);
     ctx.fill();
 
+    // flame when thrusting
+    if (this.thrusting && this.fuel > 0 && !this.landed && !this.crashed) {
+      ctx.fillStyle = 'rgba(255,140,0,0.9)';
+      ctx.beginPath();
+      ctx.moveTo(-8, this.height/2);
+      ctx.lineTo(0, this.height/2 + 18 + Math.random()*6);
+      ctx.lineTo(8, this.height/2);
+      ctx.closePath();
+      ctx.fill();
+    }
+
     ctx.restore();
   }
 
   // reset to a starting position
   reset(x, y) {
     this.x = x; this.y = y; this.vx = 0; this.vy = 0; this.angle = 0;
+    this.fuel = this.maxFuel; this.landed = false; this.crashed = false; this.thrusting = false;
   }
 }
 
