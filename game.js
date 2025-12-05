@@ -8,11 +8,11 @@ const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
 // Game constants
-const GRAVITY = 0.6;
-const JUMP_STRENGTH = 15;
-const GROUND_LEVEL = canvas.height - 80;
-const BASE_GAME_SPEED = 6;
-const OBSTACLE_SPAWN_RATE = 100; // frames between obstacles
+const GRAVITY = 0.8;
+const JUMP_STRENGTH = 18;
+const GROUND_LEVEL = canvas.height - 60;
+const BASE_GAME_SPEED = 8;
+const OBSTACLE_SPAWN_RATE = 80; // frames between obstacles
 const DEBUG_MODE = false; // Set to true to see hitboxes and debug info
 
 // Audio Web Audio API (fallback if Web Audio not available)
@@ -43,115 +43,156 @@ const playSound = (frequency, duration, type = 'sine') => {
 };
 
 // ============================================================================
-// PLAYER CLASS
+// PLAYER CLASS - Dinosaur-like character
 // ============================================================================
 class Player {
     constructor() {
         this.x = 50;
         this.y = GROUND_LEVEL;
-        this.width = 30;
-        this.height = 50;
+        this.width = 45;
+        this.height = 55;
         this.velocityY = 0;
-        this.velocityX = 0;
         
         this.isJumping = false;
         this.jumpCount = 0; // 0 = on ground, 1 = first jump, 2 = double jump
         this.isCrouching = false;
-        this.crouchHeight = 30; // Height when crouching
+        this.crouchHeight = 35;
         
         this.jumpHoldTime = 0;
-        this.maxJumpHoldTime = 15; // frames to hold for max jump height
+        this.maxJumpHoldTime = 12; // frames to hold for max jump height
+        
+        // Animation
+        this.frameCounter = 0;
+        this.animationFrame = 0;
     }
     
-    // Update player physics - called each frame
     update() {
         // Apply gravity
         this.velocityY += GRAVITY;
         this.y += this.velocityY;
         
-        // Ground collision - when player lands
+        // Ground collision
         if (this.y >= GROUND_LEVEL) {
             this.y = GROUND_LEVEL;
             this.velocityY = 0;
             this.isJumping = false;
-            this.jumpCount = 0; // Reset jump count when on ground
+            this.jumpCount = 0;
         }
         
-        // Ceiling collision (prevent going above canvas)
+        // Ceiling collision
         if (this.y < 0) {
             this.y = 0;
             this.velocityY = 0;
         }
-    }
-    
-    // Initiate jump - called when player presses jump key
-    startJump() {
-        if (!this.isJumping) {
-            // First jump from ground
-            this.isJumping = true;
-            this.jumpCount = 1;
-            this.jumpHoldTime = 0;
-            playSound(440, 0.1, 'sine'); // Jump sound
-        } else if (this.jumpCount < 2) {
-            // Double jump in air
-            this.jumpCount = 2;
-            this.jumpHoldTime = 0;
-            this.velocityY = 0; // Reset velocity for second jump
-            playSound(600, 0.1, 'sine'); // Double jump sound (higher pitch)
+        
+        // Animation update
+        if (!this.isJumping && !this.isCrouching) {
+            this.frameCounter++;
+            if (this.frameCounter > 4) {
+                this.animationFrame = (this.animationFrame + 1) % 2;
+                this.frameCounter = 0;
+            }
+        } else {
+            this.animationFrame = 0;
         }
     }
     
-    // Called every frame while jump key is held
+    startJump() {
+        if (!this.isJumping) {
+            this.isJumping = true;
+            this.jumpCount = 1;
+            this.jumpHoldTime = 0;
+            playSound(440, 0.1, 'sine');
+        } else if (this.jumpCount < 2) {
+            this.jumpCount = 2;
+            this.jumpHoldTime = 0;
+            this.velocityY = 0;
+            playSound(600, 0.1, 'sine');
+        }
+    }
+    
     holdJump() {
         if (this.isJumping && this.jumpHoldTime < this.maxJumpHoldTime) {
             this.jumpHoldTime++;
-            // Jump velocity depends on hold time - longer hold = higher jump
             this.velocityY = -JUMP_STRENGTH * (1 + this.jumpHoldTime / this.maxJumpHoldTime);
         }
     }
     
-    // Release jump key
     releaseJump() {
-        this.jumpHoldTime = this.maxJumpHoldTime; // Stop accelerating upward
+        this.jumpHoldTime = this.maxJumpHoldTime;
     }
     
-    // Crouch mechanics
     setCrouching(crouch) {
         if (!this.isJumping) {
             this.isCrouching = crouch;
         }
     }
     
-    // Get current hitbox (adjusted for crouching)
     getHitbox() {
         const h = this.isCrouching ? this.crouchHeight : this.height;
         return {
-            x: this.x + 5,
-            y: this.y,
-            width: this.width - 10,
-            height: h
+            x: this.x + 8,
+            y: this.y + (this.isCrouching ? 20 : 0),
+            width: this.width - 16,
+            height: h - (this.isCrouching ? 20 : 0)
         };
     }
     
-    // Draw player on canvas
     draw(ctx) {
         const hb = this.getHitbox();
         
-        // Draw player body
-        ctx.fillStyle = '#00aa00';
-        ctx.fillRect(this.x, this.y, this.width, this.isCrouching ? this.crouchHeight : this.height);
-        
-        // Draw eyes/face
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(this.x + 8, this.y + 10, 6, 6);
-        ctx.fillRect(this.x + 18, this.y + 10, 6, 6);
-        
-        // Draw smile when not crouching
-        if (!this.isCrouching) {
-            ctx.strokeStyle = '#000000';
-            ctx.lineWidth = 2;
+        if (this.isCrouching) {
+            // Crouching dinosaur
+            ctx.fillStyle = '#FF6B35';
+            ctx.fillRect(this.x, this.y + 20, this.width, this.crouchHeight - 20);
+            
+            // Head
+            ctx.fillStyle = '#FF6B35';
+            ctx.fillRect(this.x + 30, this.y + 18, 15, 18);
+            
+            // Snout
+            ctx.fillStyle = '#FF8C42';
+            ctx.fillRect(this.x + 45, this.y + 22, 8, 6);
+            
+            // Eye
+            ctx.fillStyle = '#000';
+            ctx.fillRect(this.x + 38, this.y + 20, 4, 4);
+        } else {
+            // Standing dinosaur with running animation
+            ctx.fillStyle = '#FF6B35';
+            
+            // Body
+            ctx.fillRect(this.x + 5, this.y + 15, this.width - 10, 30);
+            
+            // Neck
+            ctx.fillRect(this.x + 20, this.y + 8, 8, 7);
+            
+            // Head
+            ctx.fillStyle = '#FF6B35';
+            ctx.fillRect(this.x + 15, this.y, 18, 15);
+            
+            // Snout
+            ctx.fillStyle = '#FF8C42';
+            ctx.fillRect(this.x + 33, this.y + 4, 10, 7);
+            
+            // Eye
+            ctx.fillStyle = '#000';
+            ctx.fillRect(this.x + 28, this.y + 2, 4, 4);
+            
+            // Back leg (animated)
+            ctx.fillStyle = '#FF6B35';
+            const backLegOffset = this.animationFrame === 0 ? 8 : -4;
+            ctx.fillRect(this.x + 12, this.y + 42, 5, 18 + backLegOffset);
+            
+            // Front leg (animated)
+            const frontLegOffset = this.animationFrame === 0 ? -4 : 8;
+            ctx.fillRect(this.x + 30, this.y + 42, 5, 18 + frontLegOffset);
+            
+            // Tail
+            ctx.strokeStyle = '#FF6B35';
+            ctx.lineWidth = 6;
             ctx.beginPath();
-            ctx.arc(this.x + 15, this.y + 25, 5, 0, Math.PI);
+            ctx.quadraticCurveTo(this.x + 40, this.y + 20, this.x + 55, this.y + 10);
             ctx.stroke();
         }
         
@@ -165,82 +206,137 @@ class Player {
 }
 
 // ============================================================================
-// OBSTACLE CLASS
+// OBSTACLE CLASS - Different types of obstacles
 // ============================================================================
 class Obstacle {
     constructor(type = 'low') {
         this.x = canvas.width;
-        this.type = type; // 'low', 'high', 'bird'
-        this.width = 30;
+        this.type = type; // 'cactus_low', 'cactus_high', 'bird'
+        this.width = 25;
         this.speed = BASE_GAME_SPEED;
         
         // Set Y position and height based on type
-        if (type === 'low') {
-            this.y = GROUND_LEVEL + 20;
-            this.height = 30;
-        } else if (type === 'high') {
-            this.y = GROUND_LEVEL - 40;
-            this.height = 40;
+        if (type === 'cactus_low') {
+            this.y = GROUND_LEVEL + 10;
+            this.height = 45;
+            this.width = 20;
+        } else if (type === 'cactus_high') {
+            this.y = GROUND_LEVEL - 20;
+            this.height = 70;
+            this.width = 22;
         } else if (type === 'bird') {
-            this.y = GROUND_LEVEL - 60;
-            this.height = 20;
-            this.width = 40;
+            this.y = GROUND_LEVEL - 40;
+            this.height = 25;
+            this.width = 50;
+            this.wingFrame = 0;
+            this.wingCounter = 0;
         }
     }
     
     update() {
         this.x -= this.speed;
+        
+        // Bird wing animation
+        if (this.type === 'bird') {
+            this.wingCounter++;
+            if (this.wingCounter > 3) {
+                this.wingFrame = (this.wingFrame + 1) % 2;
+                this.wingCounter = 0;
+            }
+        }
     }
     
-    // Get hitbox for collision detection
     getHitbox() {
         return {
-            x: this.x,
+            x: this.x + 2,
             y: this.y,
-            width: this.width,
+            width: this.width - 4,
             height: this.height
         };
     }
     
-    // Check if obstacle is off-screen (left side)
     isOffScreen() {
         return this.x + this.width < 0;
     }
     
     draw(ctx) {
-        if (this.type === 'low') {
-            // Low obstacle (box on ground)
-            ctx.fillStyle = '#cc4400';
-            ctx.fillRect(this.x, this.y, this.width, this.height);
-            ctx.strokeStyle = '#882200';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(this.x, this.y, this.width, this.height);
-        } else if (this.type === 'high') {
-            // High obstacle (tall structure)
-            ctx.fillStyle = '#ff6600';
-            ctx.fillRect(this.x, this.y, this.width, this.height);
-            ctx.strokeStyle = '#cc4400';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(this.x, this.y, this.width, this.height);
-            // Add pattern
-            ctx.strokeStyle = '#333333';
-            for (let i = 0; i < this.height; i += 10) {
-                ctx.strokeRect(this.x + 5, this.y + i, this.width - 10, 8);
+        if (this.type === 'cactus_low') {
+            // Low cactus
+            ctx.fillStyle = '#2d5016';
+            ctx.fillRect(this.x + 8, this.y + 20, 4, 25);
+            
+            // Arms
+            ctx.fillRect(this.x + 2, this.y + 25, 6, 3);
+            ctx.fillRect(this.x + 16, this.y + 25, 6, 3);
+            
+            // Spikes
+            ctx.fillStyle = '#1a3d0a';
+            for (let i = 0; i < 5; i++) {
+                ctx.fillRect(this.x + 5, this.y + 22 + i * 5, 3, 2);
+                ctx.fillRect(this.x + 16, this.y + 22 + i * 5, 3, 2);
+            }
+        } else if (this.type === 'cactus_high') {
+            // Double cactus (high)
+            ctx.fillStyle = '#2d5016';
+            
+            // Left cactus
+            ctx.fillRect(this.x + 3, this.y + 10, 4, 55);
+            // Right cactus
+            ctx.fillRect(this.x + 15, this.y, 4, 65);
+            
+            // Arms
+            ctx.fillRect(this.x - 3, this.y + 25, 8, 3);
+            ctx.fillRect(this.x + 11, this.y + 20, 8, 3);
+            
+            // Spikes
+            ctx.fillStyle = '#1a3d0a';
+            for (let i = 0; i < 7; i++) {
+                ctx.fillRect(this.x + 1, this.y + 12 + i * 7, 3, 2);
+                ctx.fillRect(this.x + 13, this.y + 2 + i * 7, 3, 2);
             }
         } else if (this.type === 'bird') {
-            // Bird (flying obstacle)
-            ctx.fillStyle = '#ff0000';
+            // Bird (pterodactyl-like)
+            ctx.fillStyle = '#8B4513';
+            
+            // Body
             ctx.beginPath();
-            ctx.arc(this.x + 10, this.y + 10, 8, 0, Math.PI * 2);
+            ctx.ellipse(this.x + 20, this.y + 12, 12, 8, 0, 0, Math.PI * 2);
             ctx.fill();
-            // Wings
-            ctx.fillStyle = '#dd0000';
+            
+            // Head
+            ctx.fillStyle = '#A0522D';
             ctx.beginPath();
-            ctx.ellipse(this.x + 5, this.y + 10, 6, 3, -0.3, 0, Math.PI * 2);
+            ctx.arc(this.x + 32, this.y + 8, 6, 0, Math.PI * 2);
             ctx.fill();
+            
+            // Eye
+            ctx.fillStyle = '#000';
+            ctx.fillRect(this.x + 34, this.y + 6, 3, 3);
+            
+            // Beak
+            ctx.fillStyle = '#8B4513';
             ctx.beginPath();
-            ctx.ellipse(this.x + 15, this.y + 10, 6, 3, 0.3, 0, Math.PI * 2);
+            ctx.moveTo(this.x + 38, this.y + 9);
+            ctx.lineTo(this.x + 48, this.y + 8);
+            ctx.lineTo(this.x + 38, this.y + 10);
+            ctx.closePath();
             ctx.fill();
+            
+            // Wings (animated)
+            ctx.strokeStyle = '#8B4513';
+            ctx.lineWidth = 2;
+            
+            if (this.wingFrame === 0) {
+                // Wings up
+                ctx.beginPath();
+                ctx.arc(this.x + 20, this.y + 8, 12, Math.PI * 0.3, Math.PI * 0.7);
+                ctx.stroke();
+            } else {
+                // Wings down
+                ctx.beginPath();
+                ctx.arc(this.x + 20, this.y + 16, 12, Math.PI * 0.3, Math.PI * 0.7);
+                ctx.stroke();
+            }
         }
         
         // Draw hitbox if in debug mode
@@ -263,10 +359,11 @@ class ParallaxLayer {
         this.groundLevel = groundLevel;
         this.offset = 0;
         this.width = canvas.width;
+        this.difficultyMultiplier = 1.0;
     }
     
     update() {
-        this.offset -= BASE_GAME_SPEED * this.speedMultiplier;
+        this.offset -= BASE_GAME_SPEED * this.speedMultiplier * this.difficultyMultiplier;
         
         // Wrap around for seamless looping
         if (this.offset <= -this.width) {
@@ -311,6 +408,10 @@ class GameManager {
         this.distance = 0;
         this.gameSpeed = 1.0; // Debug feature
         
+            // Difficulty progression
+            this.gameTime = 0;
+            this.speedMultiplier = 1.0;
+        
         // Initialize game entities
         this.player = new Player();
         this.obstacles = [];
@@ -318,10 +419,10 @@ class GameManager {
         
         // Parallax layers (speedMultiplier, color)
         this.layers = [
-            new ParallaxLayer(0.2, '#87ceeb', false), // Far background (sky)
-            new ParallaxLayer(0.4, '#e0d4a8', false), // Mountains/clouds
-            new ParallaxLayer(0.7, '#90ee90', false), // Hills
-            new ParallaxLayer(1.0, '#228b22', true)   // Ground
+            new ParallaxLayer(0.1, '#e8d5c4', false), // Far background (desert haze)
+            new ParallaxLayer(0.3, '#e0d4a8', false), // Dunes
+            new ParallaxLayer(0.6, '#d4c896', false), // Sand ripples
+            new ParallaxLayer(1.0, '#c2ad7f', true)   // Ground sand
         ];
         
         // Input handling
@@ -410,29 +511,43 @@ class GameManager {
         if (this.state === 'playing') {
             // Apply game speed multiplier (for debug)
             const speedFactor = this.gameSpeed;
+                        // Increase difficulty over time
+                        this.gameTime++;
+                        this.speedMultiplier = 1.0 + (this.gameTime * 0.0002); // Slowly increase speed
+            
             
             // Update player
             this.player.update();
             
-            // Check if jump key is being held
-            if (this.keys[' '] || this.keys['w'] || this.keys['W'] || this.keys['arrowup']) {
+            // Check if jump key is being held (keys map uses lowercase)
+            if (this.keys[' '] || this.keys['w'] || this.keys['arrowup']) {
                 this.player.holdJump();
             }
             
             // Update parallax layers
             this.layers.forEach(layer => layer.update());
             
+                        // Update difficulty multiplier for all layers
+                        this.layers.forEach(layer => layer.difficultyMultiplier = this.speedMultiplier);
+            
             // Spawn obstacles randomly
             this.obstacleSpawnCounter++;
-            if (this.obstacleSpawnCounter > OBSTACLE_SPAWN_RATE) {
-                const types = ['low', 'high', 'bird'];
+            // Difficulty: spawn obstacles more frequently as game progresses
+            const adjustedSpawnRate = Math.max(40, OBSTACLE_SPAWN_RATE - (this.gameTime / 500));
+            if (this.obstacleSpawnCounter > adjustedSpawnRate) {
+                const types = ['cactus_low', 'cactus_high', 'bird'];
                 const randomType = types[Math.floor(Math.random() * types.length)];
-                this.obstacles.push(new Obstacle(randomType));
+                const obstacle = new Obstacle(randomType);
+                obstacle.speed = BASE_GAME_SPEED * this.speedMultiplier;
+                this.obstacles.push(obstacle);
                 this.obstacleSpawnCounter = 0;
             }
             
             // Update obstacles
-            this.obstacles.forEach(obstacle => obstacle.update());
+            this.obstacles.forEach(obstacle => {
+                obstacle.speed = BASE_GAME_SPEED * this.speedMultiplier;
+                obstacle.update();
+            });
             
             // Remove off-screen obstacles
             this.obstacles = this.obstacles.filter(obs => !obs.isOffScreen());
@@ -440,8 +555,8 @@ class GameManager {
             // Collision detection
             this.checkCollisions();
             
-            // Update score (distance-based)
-            this.distance += BASE_GAME_SPEED * speedFactor * 0.01;
+            // Update score (distance-based) scaled by difficulty/speedMultiplier
+            this.distance += BASE_GAME_SPEED * this.speedMultiplier * speedFactor * 0.01;
             this.score = Math.floor(this.distance);
             
             // Speed increase over time (optional progressive difficulty)
@@ -483,6 +598,8 @@ class GameManager {
     }
     
     reset() {
+            this.gameTime = 0;
+            this.speedMultiplier = 1.0;
         this.score = 0;
         this.distance = 0;
         this.player = new Player();
@@ -494,6 +611,12 @@ class GameManager {
     draw() {
         // Clear canvas
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+            // Draw sun
+            ctx.fillStyle = '#FFD700';
+            ctx.beginPath();
+            ctx.arc(canvas.width - 80, 50, 40, 0, Math.PI * 2);
+            ctx.fill();
+        
         
         // Draw parallax layers
         this.layers.forEach(layer => layer.draw(ctx));
@@ -531,59 +654,68 @@ class GameManager {
         ctx.fillText(`Distance: ${this.score}m`, 20, 35);
         ctx.fillText(`High Score: ${this.highScore}m`, 20, 60);
         ctx.fillText(`Muted: ${isMuted ? 'Yes' : 'No'}`, 20, 85);
+        
+        // Draw speed multiplier in top right
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+        ctx.fillRect(canvas.width - 200, 10, 190, 50);
+        ctx.fillStyle = '#FFD700';
+        ctx.font = 'bold 16px Arial';
+        ctx.fillText(`Speed: ${this.speedMultiplier.toFixed(2)}x`, canvas.width - 190, 35);
+        ctx.fillText(`Difficulty: ${Math.floor(this.gameTime / 1000)}`, canvas.width - 190, 55);
     }
     
     drawMenu() {
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+        ctx.fillStyle = 'rgba(200, 180, 150, 0.3)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         
-        ctx.fillStyle = '#00d4ff';
+        ctx.fillStyle = '#8B4513';
         ctx.font = 'bold 48px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText('NIESKOŃCZONY BIEGACZ', canvas.width / 2, canvas.height / 2 - 60);
+        ctx.fillText('🦖 PREHISTORIC RUNNER 🦖', canvas.width / 2, canvas.height / 2 - 80);
         
-        ctx.font = 'bold 24px Arial';
-        ctx.fillText('Naciśnij SPACE aby grać', canvas.width / 2, canvas.height / 2 + 20);
+        ctx.font = 'bold 28px Arial';
+        ctx.fillStyle = '#5a3a1a';
+        ctx.fillText('Naciśnij SPACE aby grać', canvas.width / 2, canvas.height / 2);
         
         ctx.font = '16px Arial';
-        ctx.fillStyle = '#aaa';
-        ctx.fillText('Skok: Space/W/↑  |  Kucanie: S/↓  |  Pauza: P', canvas.width / 2, canvas.height / 2 + 70);
+        ctx.fillStyle = '#333';
+        ctx.fillText('Skok: Space/W/↑  |  Kucanie: S/↓  |  Pauza: P', canvas.width / 2, canvas.height / 2 + 60);
         
         ctx.textAlign = 'left';
     }
     
     drawPause() {
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        ctx.fillStyle = 'rgba(200, 180, 150, 0.5)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         
-        ctx.fillStyle = '#ffff00';
+        ctx.fillStyle = '#FFD700';
         ctx.font = 'bold 48px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText('PAUZA', canvas.width / 2, canvas.height / 2);
+        ctx.fillText('⏸ PAUZA ⏸', canvas.width / 2, canvas.height / 2);
         
         ctx.font = '20px Arial';
-        ctx.fillStyle = '#fff';
-        ctx.fillText('Naciśnij P aby wznowić', canvas.width / 2, canvas.height / 2 + 50);
+        ctx.fillStyle = '#5a3a1a';
+        ctx.fillText('Naciśnij P aby wznowić', canvas.width / 2, canvas.height / 2 + 60);
         
         ctx.textAlign = 'left';
     }
     
     drawGameOver() {
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
+        ctx.fillStyle = 'rgba(100, 50, 50, 0.8)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         
-        ctx.fillStyle = '#ff0000';
-        ctx.font = 'bold 48px Arial';
+        ctx.fillStyle = '#FF6B6B';
+        ctx.font = 'bold 52px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2 - 60);
+        ctx.fillText('💀 GAME OVER 💀', canvas.width / 2, canvas.height / 2 - 60);
         
-        ctx.font = 'bold 32px Arial';
+        ctx.font = 'bold 28px Arial';
         ctx.fillStyle = '#fff';
-        ctx.fillText(`Wynik: ${this.score}m`, canvas.width / 2, canvas.height / 2);
+        ctx.fillText(`Wynik: ${this.score}m`, canvas.width / 2, canvas.height / 2 + 10);
         ctx.fillText(`High Score: ${this.highScore}m`, canvas.width / 2, canvas.height / 2 + 50);
         
-        ctx.font = '20px Arial';
-        ctx.fillStyle = '#00ff00';
+        ctx.font = '18px Arial';
+        ctx.fillStyle = '#90EE90';
         ctx.fillText('Naciśnij R aby zagrać ponownie', canvas.width / 2, canvas.height / 2 + 110);
         
         ctx.textAlign = 'left';
