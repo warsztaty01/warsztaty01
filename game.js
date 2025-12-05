@@ -318,10 +318,10 @@ class GameManager {
         
         // Parallax layers (speedMultiplier, color)
         this.layers = [
-            new ParallexLayer(0.2, '#87ceeb', false), // Far background (sky)
-            new ParallexLayer(0.4, '#e0d4a8', false), // Mountains/clouds
-            new ParallexLayer(0.7, '#90ee90', false), // Hills
-            new ParallexLayer(1.0, '#228b22', true)   // Ground
+            new ParallaxLayer(0.2, '#87ceeb', false), // Far background (sky)
+            new ParallaxLayer(0.4, '#e0d4a8', false), // Mountains/clouds
+            new ParallaxLayer(0.7, '#90ee90', false), // Hills
+            new ParallaxLayer(1.0, '#228b22', true)   // Ground
         ];
         
         // Input handling
@@ -415,7 +415,7 @@ class GameManager {
             this.player.update();
             
             // Check if jump key is being held
-            if (this.keys[' '] || this.keys['w'] || this.keys['arrowup']) {
+            if (this.keys[' '] || this.keys['w'] || this.keys['W'] || this.keys['arrowup']) {
                 this.player.holdJump();
             }
             
@@ -465,17 +465,20 @@ class GameManager {
                 // Collision detected!
                 playSound(200, 0.2, 'sine'); // Collision sound (low frequency)
                 this.endGame();
+                break; // Exit loop after collision
             }
         }
     }
     
     endGame() {
-        this.state = 'gameOver';
-        
-        // Update high score
-        if (this.score > this.highScore) {
-            this.highScore = this.score;
-            localStorage.setItem('highScore', this.highScore);
+        if (this.state !== 'gameOver') { // Prevent multiple calls
+            this.state = 'gameOver';
+            
+            // Update high score
+            if (this.score > this.highScore) {
+                this.highScore = this.score;
+                localStorage.setItem('highScore', this.highScore);
+            }
         }
     }
     
