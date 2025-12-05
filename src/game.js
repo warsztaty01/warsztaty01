@@ -141,12 +141,14 @@ export default class Game{
     // UFO shooting -> spawn bullets
     for(const u of this.ufos){ if(u.shouldShoot()){ const dx = this.ship.pos.x - u.pos.x, dy = this.ship.pos.y - u.pos.y; const d = Math.hypot(dx,dy)||1; this.bullets.push(new Bullet(u.pos.x,u.pos.y,{x:dx/d*260,y:dy/d*260})); } }
 
-    // continuous asteroid spawning with cooldown
-    if(this.asteroidSpawnCooldown <= 0 && this.asteroids.length < 3 + Math.floor(this.difficultyMultiplier * 2)){
+    // continuous asteroid spawning with cooldown (faster when empty)
+    const maxAsteroids = 3 + Math.floor(this.difficultyMultiplier * 2);
+    const spawnRate = this.asteroids.length === 0 ? 0.5 : this.asteroidSpawnRate;
+    if(this.asteroidSpawnCooldown <= 0 && this.asteroids.length < maxAsteroids){
       const x = Math.random() * this.canvas.width;
       const y = Math.random() * this.canvas.height;
       this.asteroids.push(new Asteroid(x,y,3));
-      this.asteroidSpawnCooldown = this.asteroidSpawnRate;
+      this.asteroidSpawnCooldown = spawnRate;
     }
   }
 
