@@ -1,0 +1,4 @@
+body { background: linear-gradient(#051022,#08121f); color: #e6eef8 }
+#ui{padding:12px}
+canvas#game{display:block; width:100vw; height:70vh}
+.debug{position:fixed;right:10px;top:10px;background:rgba(0,0,0,0.4);padding:8px;border-radius:6px;color:#cfe}
