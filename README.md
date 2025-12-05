@@ -1,3 +1,23 @@
+# Asteroidy — minimalna wersja
+
+Uruchomienie:
+
+1. Otwórz terminal w katalogu projektu.
+2. Uruchom prosty serwer (np. Python):
+
+```powershell
+python -m http.server 8000
+```
+
+3. Otwórz `http://localhost:8000/index.html`.
+
+Sterowanie:
+- Lewo/Prawo: obrót
+- Góra: thrust
+- Spacja: strzał
+- R: restart
+
+Ta wersja zawiera: ruch statku z bezwładnością, screen-wrapping, pociski, generowanie i dzielenie asteroid.
 ## Hi there 👋
 
 <!--
