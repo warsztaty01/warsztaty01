@@ -20,6 +20,11 @@ export default class Game{
 
     this.last = 0; this.running = false; this.score = 0;
     this.gameOver = false;
+    this.asteroidSpawnCooldown = 0;
+    this.asteroidSpawnRate = 4.0; // seconds between spawns
+    this.difficultyTimer = 0;
+    this.difficultyMultiplier = 1;
+    this.elapsedTime = 0;
     this.spawnInitial();
     this.setupInput();
   }
@@ -44,7 +49,7 @@ export default class Game{
 
   start(){ this.running = true; requestAnimationFrame(t=>this.loop(t)); }
 
-  restart(){ this.ship = new Ship(this.canvas.width/2,this.canvas.height/2); this.spawnInitial(); this.bullets=[]; this.score=0; this.gameOver = false; this.running = true; this.last = 0; }
+  restart(){ this.ship = new Ship(this.canvas.width/2,this.canvas.height/2); this.spawnInitial(); this.bullets=[]; this.score=0; this.gameOver = false; this.running = true; this.last = 0; this.asteroidSpawnCooldown = 0; this.asteroidSpawnRate = 4.0; this.difficultyTimer = 0; this.difficultyMultiplier = 1; this.elapsedTime = 0; }
 
   loop(ts){
     if(!this.last) this.last = ts; const dt = Math.min(0.05, (ts - this.last)/1000); this.last = ts;
@@ -54,6 +59,17 @@ export default class Game{
 
   update(dt){
     if(this.gameOver) return;
+
+    this.elapsedTime += dt;
+    this.difficultyTimer += dt;
+    this.asteroidSpawnCooldown -= dt;
+    
+    // increase difficulty every 60 seconds
+    if(this.difficultyTimer >= 60){
+      this.difficultyMultiplier += 0.5;
+      this.asteroidSpawnRate = Math.max(1.5, 4.0 - this.difficultyMultiplier * 0.3);
+      this.difficultyTimer = 0;
+    }
 
     // input
     if(KEYS['ArrowLeft']) this.ship.rotate(-1, dt);
@@ -124,6 +140,14 @@ export default class Game{
 
     // UFO shooting -> spawn bullets
     for(const u of this.ufos){ if(u.shouldShoot()){ const dx = this.ship.pos.x - u.pos.x, dy = this.ship.pos.y - u.pos.y; const d = Math.hypot(dx,dy)||1; this.bullets.push(new Bullet(u.pos.x,u.pos.y,{x:dx/d*260,y:dy/d*260})); } }
+
+    // continuous asteroid spawning with cooldown
+    if(this.asteroidSpawnCooldown <= 0 && this.asteroids.length < 3 + Math.floor(this.difficultyMultiplier * 2)){
+      const x = Math.random() * this.canvas.width;
+      const y = Math.random() * this.canvas.height;
+      this.asteroids.push(new Asteroid(x,y,3));
+      this.asteroidSpawnCooldown = this.asteroidSpawnRate;
+    }
   }
 
   fireBullet(){
@@ -153,8 +177,12 @@ export default class Game{
     if(this.gameOver){
       ctx.save();
       ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(0,0,this.canvas.width,this.canvas.height);
-      ctx.fillStyle = '#ff6b6b'; ctx.font = '48px sans-serif'; ctx.textAlign = 'center';
-      ctx.fillText('KONIEC GRY', this.canvas.width/2, this.canvas.height/2);
+      ctx.fillStyle = '#ff6b6b'; ctx.font = 'bold 48px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText('KONIEC GRY', this.canvas.width/2, this.canvas.height/2 - 50);
+      ctx.fillStyle = '#ffff00'; ctx.font = '32px sans-serif';
+      ctx.fillText(`Punkty: ${this.score}`, this.canvas.width/2, this.canvas.height/2 + 30);
+      ctx.fillStyle = '#aaa'; ctx.font = '14px sans-serif';
+      ctx.fillText('Naciśnij R aby zrestartować', this.canvas.width/2, this.canvas.height/2 + 70);
       ctx.restore();
     }
   }
