@@ -3,21 +3,90 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Brick Breaker — Arkanoid</title>
-  <link rel="stylesheet" href="style.css">
+  <title>Bingo — Warsztaty</title>
+  <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
-  <div class="container">
-    <h1>Brick Breaker</h1>
-    <canvas id="gameCanvas" width="800" height="600"></canvas>
-    <div class="hud">
-      <div id="score">Punkty: 0</div>
-      <div id="lives">Życia: 3</div>
-      <div id="level">Poziom: 1</div>
+  <main class="app">
+    <h1>Bingo</h1>
+    <div class="subtitle">Gra losuje wpisy i skreśla pola automatycznie. Kliknij pole aby ręcznie zamarkować, lub czekaj na BINGO.</div>
+
+    <div class="controls">
+      <div class="toolbar">
+        <div id="fileName" class="file-name small" style="color:var(--accent)">Loading...</div>
+        <button id="drawBtn">Losuj wpis</button>
+      </div>
     </div>
-    <div class="controls">Sterowanie: mysz / strzałki ← → — naciśnij Spację aby wystartować</div>
-    <div class="footer">Edytuj poziomy w <code>js/game.js</code></div>
-  </div>
+
+    <div class="top-info">
+      <div id="nextCall" class="next-call">Następne: —</div>
+      <div id="callsLog" class="calls-log"></div>
+    </div>
+
+    <div class="board-wrapper">
+      <section id="board" class="board" aria-label="Plansza bingo"></section>
+    </div>
+
+    <div id="bingoOverlay" class="bingo-overlay" aria-hidden="true">
+      <div class="bingo-text">B I N G O</div>
+    </div>
+  </main>
+
+  <script>
+    // Embed sample data directly to avoid CORS issues with local files
+    window.SAMPLE_ENTRIES = `Kot
+Pies
+Samochód
+Samolot
+Drzewo
+Kawa
+Herbata
+Komputer
+Telefon
+Książka
+Stół
+Krzesło
+Okno
+Drzwi
+Słońce
+Księżyc
+Gwiazda
+Rzeka
+Jezioro
+Góra
+Plaża
+Chleb
+Ser
+Masło
+Jabłko
+Gruszka
+Pomarańcza
+Zegar
+Buty
+Skarpetki
+Okulary
+Kapelusz
+Plecak
+Mapa
+List
+Pióro
+Długopis
+Butelka
+Kubek
+Zamek
+Klucz
+Rowerek
+Piłka
+Gitara
+Klawiatura
+Mysz
+Lampa
+Zabawka
+Rower
+Kwiat
+Ławka`.split('\n').map(s=>s.trim()).filter(Boolean);
+  </script>
+
   <script src="js/game.js"></script>
 </body>
 </html>

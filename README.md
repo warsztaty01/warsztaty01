@@ -1,40 +1,25 @@
-# Brick Breaker (Arkanoid) — HTML5 Canvas
+## Hi there 👋
 
-Prosty klon Brick Breaker / Arkanoid stworzony w HTML5 Canvas + JavaScript.
+Prosty demo Bingo (single-page) w HTML/CSS/JS.
 
-Pliki:
-- `index.html` — strona uruchamiająca grę
-- `style.css` — proste style i paleta kolorów
-- `js/game.js` — pełna logika gry (poziomy, mechanika, power-upy, dźwięk)
+Zmieniono: plansza jest teraz pełna (bez pola "FREE" pośrodku) — wszystkie 25 pól są wypełniane wpisami z pliku.
 
-Jak uruchomić:
+Pliki utworzone:
 
-1. Otwórz `index.html` w nowoczesnej przeglądarce (Chrome, Edge, Firefox).
-   - Najprościej: dwuklik pliku lub `Ctrl+O` w przeglądarce i wskaż plik.
-2. Sterowanie:
-   - Mysz: porusz platformą
-   - Klawisze: `ArrowLeft` / `ArrowRight` aby ruszać
-   - `Space`: rozpocznij / wznow
+- `index.html` — interfejs użytkownika
+- `css/style.css` — nowoczesne style + animacja BINGO
+- `js/game.js` — logika gry: wczytywanie wpisów z pliku `.txt`, generowanie losowej planszy 5x5 (pełna plansza), losowanie wpisów, autoskreślanie i wykrywanie BINGO
+- `entries/sample.txt` — przykładowe wpisy
 
-Mechanika i edycja poziomów:
-- Poziomy zdefiniowane są w `js/game.js` w tablicy `levels`.
-- Każda komórka ma wartość: `0` = puste, `1` = cegła jednorazowa, `2` = cegła wymagająca 2 trafień.
-- Możesz dodać/zmienić poziomy, dopasowując szerokość i liczbę kolumn do `BRICK.width` + padding.
+Jak używać lokalnie:
 
-Funkcje zaimplementowane:
-- Kolizje piłka-cegła, piłka-platforma, piłka-ściany
-- Cegły znikają po trafieniu; silniejsze cegły wymagają dwóch trafień
-- Piłka przyspiesza stopniowo po trafieniach
-- Power-upy spadają rzadko: `expand` (większa platforma), `multiball`, `life`
-- Proste efekty dźwiękowe generowane przez WebAudio
-- Licznik punktów, żyć i poziomów
+1. Otwórz `index.html` w przeglądarce (np. dwuklik lub `Start-Process index.html` w PowerShell).
+2. Wczytaj plik z wpisami (`entries/sample.txt`) lub utwórz własny `.txt` (po 1 wpisie w linii).
+3. Kliknij `Generuj planszę`, następnie `Losuj wpis` aby losować i automatycznie skreślać pola pasujące do wylosowanego wpisu. Nazwa wczytanego pliku pojawi się obok przycisku.
+4. Gdy zostanie pełny wiersz/kolumna/przekątna — pojawi się efekt "B I N G O".
 
-Plany / rozszerzenia (opcjonalne):
-- Zapisać rekordy w localStorage
-- Dodać menu poziomów i wybór trudności
-- Dodać grafiki / animacje cząsteczkowe przy zniszczeniu cegieł
+Chcesz dodatkowe funkcje (druk, PDF, inne rozmiary planszy, tryb wieloosobowy)? Odpowiedz, a dodam.
 
-Kod jest skomentowany i gotowy do edycji — dobrą zabawę! 🎮
 ## Hi there 👋
 
 <!--
