@@ -1,0 +1,19 @@
+/* Podstawowy layout i styl dla płótna */
+html, body {
+  height: 100%;
+  margin: 0;
+  background: #111;
+  color: #eee;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+
+
+
+
+
+
+canvas { width: 800px; height: 600px; }/* Upewnij się, że canvas nie skalowany przez przeglądarkę */}  image-rendering: optimizeQuality;  box-shadow: 0 0 20px rgba(0,0,0,0.6);  background: #000;n#gameCanvas {

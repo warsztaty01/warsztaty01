@@ -3,14 +3,13 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Minimal Canvas Game Loop</title>
-  <style>
-    html, body { height: 100%; margin: 0; display: flex; align-items: center; justify-content: center; background: #222; }
-    #gameCanvas { background: #000; display: block; }
-  </style>
+  <title>Minimal Canvas Game (800x600)</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <canvas id="gameCanvas" width="800" height="600"></canvas>
-  <script src="js/app.js"></script>
+  <!-- Płótno gry o stałym rozmiarze 800x600 -->
+  <canvas id="gameCanvas" width="800" height="600" aria-label="Canvas gry"></canvas>
+  <!-- Ładujemy moduł ES z implementacją App/GameLoop/Renderer -->
+  <script type="module" src="game.js"></script>
 </body>
 </html>
