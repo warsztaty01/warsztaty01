@@ -1,0 +1,6 @@
+{
+  "navigationFallback": {
+    "rewrite": "/index.html",
+    "exclude": ["/css/*", "/js/*", "/entries/*", "/bg-burgundy-gold.svg", "/index.html"]
+  }
+}

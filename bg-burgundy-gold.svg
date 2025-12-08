@@ -1,0 +1,227 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice" width="1920" height="1080">
+  <defs>
+    <!-- Premium burgundy to deep plum gradient -->
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#2d1b2e;stop-opacity:1" />
+      <stop offset="20%" style="stop-color:#4a2a4a;stop-opacity:1" />
+      <stop offset="40%" style="stop-color:#3d1f3d;stop-opacity:1" />
+      <stop offset="60%" style="stop-color:#5a2a52;stop-opacity:1" />
+      <stop offset="80%" style="stop-color:#431d43;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2a1428;stop-opacity:1" />
+    </linearGradient>
+
+    <!-- Gold accent gradients -->
+    <radialGradient id="goldGlow1" cx="25%" cy="25%">
+      <stop offset="0%" style="stop-color:#f4d03f;stop-opacity:0.2" />
+      <stop offset="100%" style="stop-color:#d4a574;stop-opacity:0" />
+    </radialGradient>
+
+    <radialGradient id="goldGlow2" cx="75%" cy="75%">
+      <stop offset="0%" style="stop-color:#e6c200;stop-opacity:0.15" />
+      <stop offset="100%" style="stop-color:#d4a574;stop-opacity:0" />
+    </radialGradient>
+
+    <radialGradient id="goldGlow3" cx="50%" cy="50%">
+      <stop offset="0%" style="stop-color:#f9e79f;stop-opacity:0.12" />
+      <stop offset="100%" style="stop-color:#d4a574;stop-opacity:0" />
+    </radialGradient>
+
+    <!-- Deep burgundy radial for accent -->
+    <radialGradient id="burgundyGlow" cx="80%" cy="20%">
+      <stop offset="0%" style="stop-color:#8b4a6b;stop-opacity:0.1" />
+      <stop offset="100%" style="stop-color:#5a2a52;stop-opacity:0" />
+    </radialGradient>
+
+    <!-- Wave filter for organic feel -->
+    <filter id="wave">
+      <feTurbulence type="fractalNoise" baseFrequency="0.008" numOctaves="4" result="noise" />
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="60" />
+    </filter>
+
+    <!-- Soft glow filter -->
+    <filter id="softGlow">
+      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Animations -->
+    <style>
+      @keyframes sparkleGold {
+        0% { opacity: 0; transform: scale(0.5); }
+        50% { opacity: 1; transform: scale(1); }
+        100% { opacity: 0; transform: scale(0.5); }
+      }
+      @keyframes float1 {
+        0%, 100% { transform: translateY(0px) translateX(0px); }
+        25% { transform: translateY(-25px) translateX(15px); }
+        50% { transform: translateY(-50px) translateX(-15px); }
+        75% { transform: translateY(-25px) translateX(20px); }
+      }
+      @keyframes float2 {
+        0%, 100% { transform: translateY(0px) translateX(0px); }
+        25% { transform: translateY(-35px) translateX(-20px); }
+        50% { transform: translateY(-60px) translateX(25px); }
+        75% { transform: translateY(-30px) translateX(-15px); }
+      }
+      @keyframes float3 {
+        0%, 100% { transform: translateY(0px) translateX(0px); }
+        25% { transform: translateY(-20px) translateX(25px); }
+        50% { transform: translateY(-40px) translateX(-20px); }
+        75% { transform: translateY(-25px) translateX(30px); }
+      }
+      @keyframes rotate {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      @keyframes pulse {
+        0%, 100% { opacity: 0.4; }
+        50% { opacity: 0.8; }
+      }
+      .sparkle { animation: sparkleGold 4s ease-in-out infinite; }
+      .sparkle1 { animation-delay: 0s; }
+      .sparkle2 { animation-delay: 1.3s; }
+      .sparkle3 { animation-delay: 2.6s; }
+      .float1 { animation: float1 9s ease-in-out infinite; }
+      .float2 { animation: float2 11s ease-in-out infinite; }
+      .float3 { animation: float3 13s ease-in-out infinite; }
+      .rotate { animation: rotate 25s linear infinite; }
+      .pulse { animation: pulse 4s ease-in-out infinite; }
+    </style>
+  </defs>
+
+  <!-- Base gradient background -->
+  <rect width="1920" height="1080" fill="url(#bgGradient)"/>
+
+  <!-- Gold accent glows -->
+  <ellipse cx="380" cy="240" rx="700" ry="450" fill="url(#goldGlow1)"/>
+  <ellipse cx="1600" cy="850" rx="900" ry="550" fill="url(#goldGlow2)"/>
+  <ellipse cx="960" cy="540" rx="650" ry="500" fill="url(#goldGlow3)"/>
+
+  <!-- Burgundy glow accent -->
+  <ellipse cx="1700" cy="180" rx="500" ry="600" fill="url(#burgundyGlow)"/>
+
+  <!-- Geometric accent shapes (very subtle) -->
+  <g opacity="0.06">
+    <!-- Large circles for depth and sophistication -->
+    <circle cx="1850" cy="120" r="320" fill="#d4a574" stroke="#d4a574" stroke-width="1"/>
+    <circle cx="100" cy="900" r="380" fill="#f4d03f" stroke="#f4d03f" stroke-width="1"/>
+    <circle cx="960" cy="540" r="240" fill="#d4a574" stroke="#d4a574" stroke-width="1"/>
+  </g>
+
+  <!-- Subtle wave patterns -->
+  <g opacity="0.03">
+    <path d="M 0,250 Q 300,120 600,250 T 1200,250 T 1800,250 T 2400,250 L 2400,500 Q 2100,630 1800,500 T 1200,500 T 600,500 T 0,500 Z" fill="#d4a574" filter="url(#wave)"/>
+    <path d="M 0,650 Q 380,520 760,650 T 1520,650 T 2280,650 L 2280,920 Q 1900,1050 1520,920 T 760,920 T 0,920 Z" fill="#f4d03f" filter="url(#wave)"/>
+  </g>
+
+  <!-- Floating golden circles with rings -->
+  <g class="float1">
+    <circle cx="420" cy="340" r="95" fill="none" stroke="#d4a574" stroke-width="2.5" opacity="0.3"/>
+    <circle cx="420" cy="340" r="102" fill="none" stroke="#f4d03f" stroke-width="1" opacity="0.15"/>
+    <circle cx="420" cy="340" r="110" fill="none" stroke="#d4a574" stroke-width="0.5" opacity="0.08"/>
+  </g>
+
+  <g class="float2">
+    <circle cx="1550" cy="820" r="120" fill="none" stroke="#f4d03f" stroke-width="2.5" opacity="0.25"/>
+    <circle cx="1550" cy="820" r="130" fill="none" stroke="#d4a574" stroke-width="1" opacity="0.12"/>
+    <circle cx="1550" cy="820" r="140" fill="none" stroke="#f4d03f" stroke-width="0.5" opacity="0.06"/>
+  </g>
+
+  <g class="float3">
+    <circle cx="1300" cy="240" r="85" fill="none" stroke="#d4a574" stroke-width="2.5" opacity="0.28"/>
+    <circle cx="1300" cy="240" r="92" fill="none" stroke="#f4d03f" stroke-width="1" opacity="0.14"/>
+    <circle cx="1300" cy="240" r="100" fill="none" stroke="#d4a574" stroke-width="0.5" opacity="0.07"/>
+  </g>
+
+  <!-- Rotating geometric accent (elegant diamond/stars) -->
+  <g class="rotate" opacity="0.05" transform="translate(960, 540)">
+    <polygon points="0,-180 156,90 -156,90" fill="none" stroke="#d4a574" stroke-width="2"/>
+    <polygon points="0,-240 208,120 -208,120" fill="none" stroke="#f4d03f" stroke-width="1"/>
+    <polygon points="130,-130 130,130 -130,0" fill="none" stroke="#d4a574" stroke-width="1"/>
+  </g>
+
+  <!-- Premium gold sparkles with pulsing effect -->
+  <g class="sparkle sparkle1">
+    <circle cx="380" cy="200" r="4" fill="#f4d03f"/>
+    <circle cx="380" cy="200" r="8" fill="none" stroke="#d4a574" stroke-width="1" opacity="0.7"/>
+  </g>
+
+  <g class="sparkle sparkle2">
+    <circle cx="580" cy="480" r="3.5" fill="#d4a574"/>
+    <circle cx="580" cy="480" r="7" fill="none" stroke="#f4d03f" stroke-width="0.8" opacity="0.6"/>
+  </g>
+
+  <g class="sparkle sparkle3">
+    <circle cx="320" cy="750" r="3" fill="#f4d03f"/>
+    <circle cx="320" cy="750" r="6" fill="none" stroke="#d4a574" stroke-width="0.8" opacity="0.6"/>
+  </g>
+
+  <!-- Top right sparkles -->
+  <g class="sparkle sparkle2">
+    <circle cx="1720" cy="180" r="4" fill="#d4a574"/>
+    <circle cx="1720" cy="180" r="8" fill="none" stroke="#f4d03f" stroke-width="1" opacity="0.7"/>
+  </g>
+
+  <g class="sparkle sparkle3">
+    <circle cx="1880" cy="520" r="3.5" fill="#f4d03f"/>
+    <circle cx="1880" cy="520" r="7" fill="none" stroke="#d4a574" stroke-width="0.8" opacity="0.6"/>
+  </g>
+
+  <g class="sparkle sparkle1">
+    <circle cx="1650" cy="920" r="3" fill="#d4a574"/>
+    <circle cx="1650" cy="920" r="6" fill="none" stroke="#f4d03f" stroke-width="0.8" opacity="0.6"/>
+  </g>
+
+  <!-- Bottom center accent sparkles -->
+  <g class="sparkle sparkle1">
+    <circle cx="700" cy="1000" r="3" fill="#f4d03f"/>
+    <circle cx="700" cy="1000" r="5.5" fill="none" stroke="#d4a574" stroke-width="0.8" opacity="0.5"/>
+  </g>
+
+  <g class="sparkle sparkle2">
+    <circle cx="1400" cy="1020" r="3.5" fill="#d4a574"/>
+    <circle cx="1400" cy="1020" r="7" fill="none" stroke="#f4d03f" stroke-width="0.9" opacity="0.6"/>
+  </g>
+
+  <!-- Elegant diagonal accent lines -->
+  <g opacity="0.04" stroke-width="2.5">
+    <line x1="0" y1="0" x2="500" y2="500" stroke="#d4a574"/>
+    <line x1="1920" y1="0" x2="1420" y2="500" stroke="#f4d03f"/>
+    <line x1="1920" y1="1080" x2="1300" y2="580" stroke="#d4a574"/>
+    <line x1="0" y1="1080" x2="600" y2="580" stroke="#f4d03f"/>
+  </g>
+
+  <!-- Premium center grid pattern (very faint gold) -->
+  <g opacity="0.015" stroke="#d4a574" stroke-width="1.5">
+    <defs>
+      <pattern id="grid" width="140" height="140" patternUnits="userSpaceOnUse">
+        <rect width="140" height="140" fill="none"/>
+        <line x1="0" y1="0" x2="140" y2="0"/>
+        <line x1="0" y1="0" x2="0" y2="140"/>
+      </pattern>
+    </defs>
+    <rect x="360" y="160" width="1200" height="760" fill="url(#grid)"/>
+  </g>
+
+  <!-- Premium hexagon accent pattern (subtle background detail) -->
+  <g opacity="0.02" fill="none" stroke="#f4d03f" stroke-width="1">
+    <path d="M 200,300 L 250,270 L 300,300 L 300,360 L 250,390 L 200,360 Z"/>
+    <path d="M 1700,750 L 1750,720 L 1800,750 L 1800,810 L 1750,840 L 1700,810 Z"/>
+  </g>
+
+  <!-- Elegant vignette for depth and sophistication -->
+  <radialGradient id="vignette" cx="50%" cy="50%">
+    <stop offset="55%" style="stop-color:#000000;stop-opacity:0" />
+    <stop offset="100%" style="stop-color:#2d1b2e;stop-opacity:0.25" />
+  </radialGradient>
+  <rect width="1920" height="1080" fill="url(#vignette)"/>
+
+  <!-- Premium top border accent -->
+  <rect x="0" y="0" width="1920" height="3" fill="#d4a574" opacity="0.15"/>
+  
+  <!-- Premium bottom border accent -->
+  <rect x="0" y="1077" width="1920" height="3" fill="#f4d03f" opacity="0.12"/>
+</svg>
