@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redmine Time Logger 🕐</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+            font-size: 2em;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #eee;
+        }
+        
+        .tab-btn {
+            padding: 12px 24px;
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            font-size: 1em;
+            color: #666;
+            transition: all 0.3s;
+        }
+        
+        .tab-btn.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+            font-family: inherit;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        
+        button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .message {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+        
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+        
+        .tasks-list {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 2px solid #eee;
+            border-radius: 8px;
+            padding: 10px;
+        }
+        
+        .task-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            transition: background 0.2s;
+        }
+        
+        .task-item:hover {
+            background: #e9ecef;
+        }
+        
+        .task-item span {
+            cursor: pointer;
+            flex: 1;
+            color: #333;
+        }
+        
+        .task-item span:hover {
+            color: #667eea;
+            text-decoration: underline;
+        }
+        
+        .delete-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9em;
+            width: auto;
+        }
+        
+        .delete-btn:hover {
+            background: #c82333;
+        }
+        
+        .two-columns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+            
+            .two-columns {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 1.5em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⏱️ Redmine Time Logger</h1>
+        
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('log-time')">Zaloguj Czas</button>
+            <button class="tab-btn" onclick="switchTab('tasks')">Moje Taski</button>
+        </div>
+        
+        <div id="message" class="message"></div>
+        
+        <!-- TAB: LOG TIME -->
+        <div id="log-time" class="tab-content active">
+            <form onsubmit="submitTimeEntry(event)">
+                <div class="form-group">
+                    <label for="savedTasks">Wybierz zapisany task (opcjonalnie):</label>
+                    <select id="savedTasks" onchange="loadSelectedTask()">
+                        <option value="">-- Wczytywanie tasków... --</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="issueId">Issue ID *</label>
+                    <input type="number" id="issueId" required placeholder="np. 12345">
+                </div>
+                
+                <div class="two-columns">
+                    <div class="form-group">
+                        <label for="hours">Godziny *</label>
+                        <input type="number" id="hours" step="0.5" required placeholder="np. 2.5">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="activity">Aktywność *</label>
+                        <select id="activity" required>
+                            <option value="">-- Wybierz --</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="spentOn">Data *</label>
+                    <input type="date" id="spentOn" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="comments">Komentarz</label>
+                    <textarea id="comments" placeholder="Opcjonalnie: opis pracy"></textarea>
+                </div>
+                
+                <button type="submit">🚀 Wyślij do Redmine</button>
+            </form>
+        </div>
+        
+        <!-- TAB: TASKS -->
+        <div id="tasks" class="tab-content">
+            <div class="form-group">
+                <label for="taskId">Issue ID *</label>
+                <input type="number" id="taskId" placeholder="np. 12345">
+            </div>
+            
+            <div class="form-group">
+                <label for="taskDesc">Opis taska *</label>
+                <input type="text" id="taskDesc" placeholder="np. Naprawa buga #123">
+            </div>
+            
+            <button onclick="saveTask()">💾 Zapisz Task</button>
+            
+            <h3 style="margin-top: 30px; margin-bottom: 15px; color: #333;">Zapisane taski:</h3>
+            <div id="tasksList" class="tasks-list">
+                <p style="color: #999; text-align: center;">Brak zapisanych tasków</p>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Set today's date as default
+        document.getElementById('spentOn').valueAsDate = new Date();
+        
+        // Load activities and tasks on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadActivities();
+            loadTasks();
+        });
+        
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+        
+        function loadActivities() {
+            const activities = {{ activities | tojson }};
+            const select = document.getElementById('activity');
+            
+            for (const [name, id] of Object.entries(activities)) {
+                const option = document.createElement('option');
+                option.value = id;
+                option.textContent = name;
+                select.appendChild(option);
+            }
+            
+            // Set default activity
+            select.value = 9; // Development
+        }
+        
+        function loadTasks() {
+            fetch('/api/tasks')
+                .then(response => response.json())
+                .then(tasks => {
+                    const select = document.getElementById('savedTasks');
+                    const list = document.getElementById('tasksList');
+                    
+                    // Clear existing options (keep the first one)
+                    while (select.options.length > 1) {
+                        select.remove(1);
+                    }
+                    
+                    if (Object.keys(tasks).length === 0) {
+                        list.innerHTML = '<p style="color: #999; text-align: center;">Brak zapisanych tasków</p>';
+                        select.innerHTML = '<option value="">-- Lub wpisz ID --</option>';
+                        return;
+                    }
+                    
+                    list.innerHTML = '';
+                    
+                    // Sort tasks by ID
+                    const sortedTasks = Object.entries(tasks).sort((a, b) => a[0] - b[0]);
+                    
+                    for (const [taskId, taskDesc] of sortedTasks) {
+                        // Add to dropdown
+                        const option = document.createElement('option');
+                        option.value = taskId;
+                        option.textContent = `${taskId} - ${taskDesc}`;
+                        select.appendChild(option);
+                        
+                        // Add to list
+                        const item = document.createElement('div');
+                        item.className = 'task-item';
+                        item.innerHTML = `
+                            <span onclick="loadTaskFromList('${taskId}')">${taskId} - ${taskDesc}</span>
+                            <button class="delete-btn" onclick="deleteTask('${taskId}')">Usuń</button>
+                        `;
+                        list.appendChild(item);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading tasks:', error);
+                    document.getElementById('savedTasks').innerHTML = '<option value="">-- Błąd ładowania tasków --</option>';
+                });
+        }
+        
+        function loadSelectedTask() {
+            const select = document.getElementById('savedTasks');
+            const taskId = select.value;
+            
+            if (taskId) {
+                document.getElementById('issueId').value = taskId;
+            }
+        }
+        
+        function loadTaskFromList(taskId) {
+            document.getElementById('issueId').value = taskId;
+            switchTab('log-time');
+        }
+        
+        function saveTask() {
+            const taskId = document.getElementById('taskId').value;
+            const taskDesc = document.getElementById('taskDesc').value;
+            
+            if (!taskId || !taskDesc) {
+                showMessage('Uzupełnij wszystkie pola', 'error');
+                return;
+            }
+            
+            fetch('/api/tasks', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    task_id: taskId,
+                    task_desc: taskDesc
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                showMessage('✅ ' + data.message, 'success');
+                document.getElementById('taskId').value = '';
+                document.getElementById('taskDesc').value = '';
+                loadTasks();
+            })
+            .catch(error => {
+                showMessage('❌ Błąd: ' + error, 'error');
+            });
+        }
+        
+        function deleteTask(taskId) {
+            if (!confirm(`Na pewno usunąć task ${taskId}?`)) {
+                return;
+            }
+            
+            fetch(`/api/tasks/${taskId}`, {
+                method: 'DELETE'
+            })
+            .then(response => response.json())
+            .then(data => {
+                showMessage('✅ ' + data.message, 'success');
+                loadTasks();
+            })
+            .catch(error => {
+                showMessage('❌ Błąd: ' + error, 'error');
+            });
+        }
+        
+        function submitTimeEntry(e) {
+            e.preventDefault();
+            
+            const issueId = document.getElementById('issueId').value;
+            const hours = document.getElementById('hours').value;
+            const activityId = document.getElementById('activity').value;
+            const spentOn = document.getElementById('spentOn').value;
+            const comments = document.getElementById('comments').value;
+            
+            if (!issueId || !hours || !activityId || !spentOn) {
+                showMessage('Uzupełnij wszystkie wymagane pola', 'error');
+                return;
+            }
+            
+            fetch('/api/time-entries', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    issue_id: issueId,
+                    hours: hours,
+                    activity_id: activityId,
+                    spent_on: spentOn,
+                    comments: comments
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showMessage('❌ ' + data.error, 'error');
+                } else {
+                    showMessage('✅ ' + data.message, 'success');
+                    // Reset form
+                    document.querySelector('form').reset();
+                    document.getElementById('spentOn').valueAsDate = new Date();
+                    document.getElementById('activity').value = 9;
+                }
+            })
+            .catch(error => {
+                showMessage('❌ Błąd połączenia: ' + error, 'error');
+            });
+        }
+        
+        function showMessage(text, type) {
+            const msgDiv = document.getElementById('message');
+            msgDiv.textContent = text;
+            msgDiv.className = 'message ' + type;
+            
+            setTimeout(() => {
+                msgDiv.classList.remove('success', 'error');
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
