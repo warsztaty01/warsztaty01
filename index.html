@@ -3,67 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Dart Pro - Tournament 501</title>
+    <title>Dart Pro - Tournament Master</title>
     <style>
         :root {
-            --bg: #0f1215;
-            --panel: #1c2229;
-            --accent: #00d2ff;
-            --p1: #3498db;
-            --p2: #e67e22;
+            --bg: #0f1215; --panel: #1c2229; --accent: #00d2ff;
+            --p1: #3498db; --p2: #e67e22;
         }
-
         body {
             margin: 0; padding: 0; background: var(--bg); color: white;
-            font-family: 'Segoe UI', sans-serif; display: flex; height: 100vh; overflow: hidden;
+            font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; height: 100vh; overflow: hidden;
         }
-
-        #game-wrapper {
-            display: flex; width: 100%; height: 100%; padding: 10px; box-sizing: border-box; gap: 10px;
+        header {
+            background: var(--panel); padding: 10px 20px; display: flex; 
+            justify-content: space-between; align-items: center; border-bottom: 2px solid #2d3640;
         }
-
-        .side-panel {
-            flex: 0 0 240px; background: var(--panel); padding: 20px;
-            border-radius: 12px; display: flex; flex-direction: column;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-        }
-
-        #board-container { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; }
-        svg { height: 96vh; width: auto; aspect-ratio: 1/1; touch-action: none; }
+        #game-wrapper { display: flex; flex: 1; width: 100%; padding: 10px; box-sizing: border-box; gap: 10px; }
+        .side-panel { flex: 0 0 240px; background: var(--panel); padding: 15px; border-radius: 12px; display: flex; flex-direction: column; }
+        #board-container { flex: 1; display: flex; align-items: center; justify-content: center; }
+        svg { height: 90vh; width: auto; aspect-ratio: 1/1; touch-action: none; }
         
-        .player-card { 
-            padding: 15px; border-radius: 8px; margin-bottom: 10px; 
-            border-left: 5px solid transparent; background: #252d37; opacity: 0.6;
-            transition: 0.3s;
-        }
-        .player-card.active { opacity: 1; border-left-color: var(--accent); transform: scale(1.02); }
-        .score-val { font-size: 3rem; font-weight: 900; line-height: 1; }
+        .player-card { padding: 12px; border-radius: 8px; margin-bottom: 8px; border-left: 5px solid transparent; background: #252d37; opacity: 0.6; }
+        .player-card.active { opacity: 1; border-left-color: var(--accent); background: #2d3a4a; }
+        .score-val { font-size: 2.8rem; font-weight: 900; line-height: 1; }
         
-        #hint-box {
-            margin-top: auto; padding: 15px; background: rgba(0,210,255,0.1);
-            border: 1px dashed var(--accent); border-radius: 8px; text-align: center;
+        #history-list { flex: 1; overflow-y: auto; font-size: 0.8rem; margin-top: 10px; border-top: 1px solid #333; }
+        .hist-row { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #2d3640; }
+        
+        .btn-group { display: flex; gap: 5px; }
+        button {
+            background: #2d3640; border: none; color: white; padding: 8px 12px;
+            border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s;
         }
-        #hint-text { color: var(--accent); font-weight: bold; font-size: 1.1rem; }
-
-        #history-list { flex: 1; overflow-y: auto; font-size: 0.85rem; margin-top: 10px; }
-        .hist-row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #2d3640; }
+        button:hover { background: #3d4a59; }
+        button.active-opt { background: var(--accent); color: black; }
+        #undo-btn { background: #e74c3c; width: 100%; margin-top: 10px; }
+        #undo-btn:active { transform: scale(0.95); }
 
         .marker { fill: white; stroke: black; stroke-width: 1.5; pointer-events: none; }
-        
-        button {
-            background: #2d3640; border: none; color: white; padding: 10px;
-            border-radius: 6px; cursor: pointer; margin-top: 5px; font-weight: bold;
-        }
-        button.mode-on { background: var(--accent); color: #000; }
-
-        @media (max-width: 1000px) {
-            #game-wrapper { flex-direction: column; overflow-y: auto; }
-            .side-panel { flex: none; width: auto; }
-            #board-container { height: 50vh; }
-        }
     </style>
 </head>
 <body>
+
+<header>
+    <div class="btn-group">
+        <button class="score-opt" onclick="setStartScore(301)">301</button>
+        <button class="score-opt" onclick="setStartScore(401)">401</button>
+        <button class="score-opt active-opt" onclick="setStartScore(501)">501</button>
+    </div>
+    <div id="hint-text" style="color: var(--accent); font-weight: bold;">T20 - T20 - T20</div>
+</header>
 
 <div id="game-wrapper">
     <div class="side-panel">
@@ -75,18 +63,9 @@
             <small style="color:var(--p2)">GRACZ 2</small>
             <div id="p2-score" class="score-val">501</div>
         </div>
-        
-        <div id="turn-status" style="text-align:center; margin: 10px 0;">
-            Rzuty: <span id="throws-count">0</span> / 3
-        </div>
-
-        <button id="btn-501" class="mode-on" onclick="toggle501()">Tryb 501: ON</button>
-        <button onclick="resetGame()">Reset gry</button>
-
-        <div id="hint-box">
-            <small>SUGESTIA:</small>
-            <div id="hint-text">T20 - T20 - T20</div>
-        </div>
+        <div style="text-align:center; margin: 10px 0;">Rzuty: <span id="throws-count">0</span> / 3</div>
+        <button id="undo-btn" onclick="undoLastMove()">Cofnij ruch (Undo)</button>
+        <button onclick="resetGame()" style="margin-top:5px; background: #555;">Reset gry</button>
     </div>
 
     <div id="board-container">
@@ -94,7 +73,7 @@
     </div>
 
     <div class="side-panel">
-        <strong style="font-size: 0.8rem; letter-spacing: 1px;">HISTORIA RZUTÓW</strong>
+        <strong>HISTORIA</strong>
         <div id="history-list"></div>
     </div>
 </div>
@@ -104,20 +83,15 @@
     const SECTORS = [20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5];
     const R = { doubleOut: 240, doubleIn: 215, tripleOut: 145, tripleIn: 115, bullOuter: 35, bullInner: 15 };
 
+    let startScore = 501;
     let game = {
-        is501: true,
         currentPlayer: 1,
         scores: { 1: 501, 2: 501 },
-        turnScore: 0,
         throws: 0,
-        history: []
+        fullHistory: [] // Przechowuje obiekty {player, points, label, x, y, isBust}
     };
 
-    // Uproszczona tabela checkoutów dla darta
-    const CHECKOUTS = {
-        170: "T20-T20-BULL", 167: "T20-T19-BULL", 164: "T20-T18-BULL", 161: "T20-T17-BULL", 160: "T20-T20-D20",
-        100: "T20-D20", 80: "T20-D10", 60: "S20-D20", 50: "S10-D20", 40: "D20 (TOP)", 32: "D16", 16: "D8", 8: "D4", 4: "D2", 2: "D1"
-    };
+    const CHECKOUTS = { 170: "T20-T20-BULL", 167: "T20-T19-BULL", 164: "T20-T18-BULL", 160: "T20-T20-D20", 40: "D20", 32: "D16", 16: "D8", 8: "D4", 4: "D2", 2: "D1" };
 
     function drawBoard() {
         const bg = document.createElementNS("http://www.w3.org/2000/svg", "circle");
@@ -125,12 +99,9 @@
         svg.appendChild(bg);
 
         const createArc = (r1, r2, start, end, fill) => {
-            const polarToCart = (r, deg) => {
-                const rad = (deg - 90) * Math.PI / 180;
-                return { x: r * Math.cos(rad), y: r * Math.sin(rad) };
-            };
-            const s1 = polarToCart(r1, start), e1 = polarToCart(r1, end);
-            const s2 = polarToCart(r2, start), e2 = polarToCart(r2, end);
+            const rad = (d) => (d - 90) * Math.PI / 180;
+            const s1 = {x: r1*Math.cos(rad(start)), y: r1*Math.sin(rad(start))}, e1 = {x: r1*Math.cos(rad(end)), y: r1*Math.sin(rad(end))};
+            const s2 = {x: r2*Math.cos(rad(start)), y: r2*Math.sin(rad(start))}, e2 = {x: r2*Math.cos(rad(end)), y: r2*Math.sin(rad(end))};
             const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
             path.setAttribute("d", `M${s1.x},${s1.y} A${r1},${r1} 0 0 1 ${e1.x},${e1.y} L${e2.x},${e2.y} A${r2},${r2} 0 0 0 ${s2.x},${s2.y} Z`);
             path.setAttribute("fill", fill); path.setAttribute("stroke", "#222");
@@ -140,17 +111,14 @@
         for (let i = 0; i < 20; i++) {
             const start = i * 18 - 9, end = (i + 1) * 18 - 9;
             const isEven = i % 2 === 0;
-            const cSingle = isEven ? "#111" : "#eee";
-            const cMulti = isEven ? "#e74c3c" : "#27ae60";
+            svg.appendChild(createArc(R.doubleIn, R.doubleOut, start, end, isEven ? "#e74c3c" : "#27ae60"));
+            svg.appendChild(createArc(R.tripleOut, R.doubleIn, start, end, isEven ? "#111" : "#eee"));
+            svg.appendChild(createArc(R.tripleIn, R.tripleOut, start, end, isEven ? "#e74c3c" : "#27ae60"));
+            svg.appendChild(createArc(R.bullOuter, R.tripleIn, start, end, isEven ? "#111" : "#eee"));
 
-            svg.appendChild(createArc(R.doubleIn, R.doubleOut, start, end, cMulti));
-            svg.appendChild(createArc(R.tripleOut, R.doubleIn, start, end, cSingle));
-            svg.appendChild(createArc(R.tripleIn, R.tripleOut, start, end, cMulti));
-            svg.appendChild(createArc(R.bullOuter, R.tripleIn, start, end, cSingle));
-
-            const textPos = { x: 190 * Math.cos((i*18-90)*Math.PI/180), y: 190 * Math.sin((i*18-90)*Math.PI/180) + 7 };
+            const ang = (i*18-90)*Math.PI/180;
             const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
-            text.setAttribute("x", textPos.x); text.setAttribute("y", textPos.y);
+            text.setAttribute("x", 190*Math.cos(ang)); text.setAttribute("y", 190*Math.sin(ang)+7);
             text.setAttribute("fill", isEven ? "white" : "black"); text.setAttribute("text-anchor", "middle");
             text.setAttribute("font-size", "20"); text.setAttribute("font-weight", "bold");
             text.textContent = SECTORS[i]; svg.appendChild(text);
@@ -178,94 +146,114 @@
             else if (dist >= R.tripleIn && dist <= R.tripleOut) { mult = 3; label = "T" + SECTORS[secIdx]; }
             p = SECTORS[secIdx] * mult;
         }
-        handleLogic(p, label, x, y);
-    }
 
-    function handleLogic(p, label, x, y) {
-        const currentScore = game.scores[game.currentPlayer];
+        const isBust = (game.scores[game.currentPlayer] - p < 0 || game.scores[game.currentPlayer] - p === 1);
         
-        // Zmiana punktów
-        if (game.is501) {
-            if (currentScore - p < 0 || currentScore - p === 1) {
-                alert("BUST! Przekroczenie lub pozostał 1 pkt.");
-                endTurn(true);
-                return;
-            }
-            if (currentScore - p === 0) {
-                alert(`GRACZ ${game.currentPlayer} WYGRYWA!`);
-                resetGame();
-                return;
-            }
+        // Zapis do historii dla Undo
+        const shotData = { 
+            player: game.currentPlayer, 
+            points: p, label: label, 
+            x: x, y: y, 
+            isBust: isBust,
+            prevThrows: game.throws 
+        };
+        game.fullHistory.push(shotData);
+
+        if (!isBust) {
             game.scores[game.currentPlayer] -= p;
+            if (game.scores[game.currentPlayer] === 0) {
+                alert(`GRACZ ${game.currentPlayer} WYGRAŁ!`);
+                resetGame(); return;
+            }
         } else {
-            game.scores[game.currentPlayer] += p;
+            alert("BUST!");
+            // W przypadku Bust tura kończy się natychmiast
+            game.throws = 2; // Udajemy, że to był 3 rzut, aby endTurn zadziałało
         }
 
-        game.turnScore += p;
         game.throws++;
-        
-        // UI Updates
-        document.getElementById(`p${game.currentPlayer}-score`).innerText = game.scores[game.currentPlayer];
-        document.getElementById('throws-count').innerText = game.throws;
-        
-        const histItem = document.createElement('div');
-        histItem.className = 'hist-row';
-        histItem.innerHTML = `<span>G${game.currentPlayer}: ${label}</span><span>${game.is501 ? '-' : '+'}${p}</span>`;
-        document.getElementById('history-list').prepend(histItem);
-
-        const m = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-        m.setAttribute("cx", x); m.setAttribute("cy", y); m.setAttribute("r", "5");
-        m.setAttribute("class", "marker"); document.getElementById('m-layer').appendChild(m);
-
-        updateHint();
+        refreshUI();
 
         if (game.throws >= 3) {
-            setTimeout(() => endTurn(false), 500);
+            setTimeout(nextTurn, 600);
         }
     }
 
-    function updateHint() {
+    function undoLastMove() {
+        if (game.fullHistory.length === 0) return;
+        
+        const last = game.fullHistory.pop();
+        
+        // Jeśli był następny gracz, przywróć poprzedniego
+        if (last.player !== game.currentPlayer) {
+            nextTurn(); // Przełączenie gracza z powrotem
+        }
+
+        if (!last.isBust) {
+            game.scores[last.player] += last.points;
+        }
+        
+        game.throws = last.prevThrows;
+        refreshUI();
+        
+        // Usuń ostatni marker
+        const markers = document.getElementById('m-layer').children;
+        if (markers.length > 0) markers[markers.length - 1].remove();
+        
+        // Usuń z listy historii UI
+        const histList = document.getElementById('history-list');
+        if (histList.children.length > 0) histList.children[0].remove();
+    }
+
+    function refreshUI() {
+        document.getElementById('p1-score').innerText = game.scores[1];
+        document.getElementById('p2-score').innerText = game.scores[2];
+        document.getElementById('throws-count').innerText = game.throws;
+        
+        // Dodaj do listy historii (tylko przy rzucie, nie przy undo)
+        if (arguments.length === 0 && game.fullHistory.length > 0) {
+            const last = game.fullHistory[game.fullHistory.length-1];
+            const histRow = document.createElement('div');
+            histRow.className = 'hist-row';
+            histRow.innerHTML = `<span>G${last.player}: ${last.label}</span><span>-${last.points}</span>`;
+            document.getElementById('history-list').prepend(histRow);
+
+            const m = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            m.setAttribute("cx", last.x); m.setAttribute("cy", last.y); m.setAttribute("r", "5");
+            m.setAttribute("class", "marker"); document.getElementById('m-layer').appendChild(m);
+        }
+
+        // Sugestia
         const s = game.scores[game.currentPlayer];
         const h = document.getElementById('hint-text');
         if (s > 170) h.innerText = "Celuj w T20";
-        else if (CHECKOUTS[s]) h.innerText = CHECKOUTS[s];
-        else if (s % 2 === 0 && s <= 40) h.innerText = "D" + (s/2);
-        else h.innerText = "Ustaw pod D20/D16";
+        else h.innerText = CHECKOUTS[s] || (s <= 40 && s % 2 === 0 ? "D"+(s/2) : "Zostaw D20/D16");
     }
 
-    function endTurn(isBust) {
-        if (isBust && game.is501) {
-            game.scores[game.currentPlayer] += game.turnScore;
-            document.getElementById(`p${game.currentPlayer}-score`).innerText = game.scores[game.currentPlayer];
-        }
+    function nextTurn() {
         game.throws = 0;
-        game.turnScore = 0;
         game.currentPlayer = game.currentPlayer === 1 ? 2 : 1;
         document.getElementById('p1-card').classList.toggle('active');
         document.getElementById('p2-card').classList.toggle('active');
-        document.getElementById('throws-count').innerText = "0";
         document.getElementById('m-layer').innerHTML = '';
-        updateHint();
+        refreshUI();
     }
 
-    function toggle501() {
-        game.is501 = !game.is501;
-        document.getElementById('btn-501').innerText = `Tryb 501: ${game.is501 ? 'ON' : 'OFF'}`;
-        document.getElementById('btn-501').classList.toggle('mode-on');
+    function setStartScore(val) {
+        startScore = val;
+        document.querySelectorAll('.score-opt').forEach(b => b.classList.remove('active-opt'));
+        event.target.classList.add('active-opt');
         resetGame();
     }
 
     function resetGame() {
-        game.scores = game.is501 ? { 1: 501, 2: 501 } : { 1: 0, 2: 0 };
-        game.throws = 0;
-        game.currentPlayer = 1;
-        document.getElementById('p1-score').innerText = game.scores[1];
-        document.getElementById('p2-score').innerText = game.scores[2];
+        game.scores = { 1: startScore, 2: startScore };
+        game.throws = 0; game.currentPlayer = 1; game.fullHistory = [];
         document.getElementById('history-list').innerHTML = '';
         document.getElementById('m-layer').innerHTML = '';
         document.getElementById('p1-card').classList.add('active');
         document.getElementById('p2-card').classList.remove('active');
-        updateHint();
+        refreshUI();
     }
 
     svg.addEventListener('mousedown', (e) => processShot(e.clientX, e.clientY));
@@ -274,8 +262,7 @@
         for (let t of e.changedTouches) processShot(t.clientX, t.clientY);
     }, {passive: false});
 
-    drawBoard();
-    updateHint();
+    drawBoard(); refreshUI();
 </script>
 </body>
 </html>
