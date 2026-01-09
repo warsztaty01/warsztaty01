@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Dart Pro - Full Center</title>
+    <title>Dart Pro - Wide Layout</title>
     <style>
         :root {
-            --bg: #121212;
+            --bg: #1a1a1a;
+            --panel-bg: #252525;
             --accent: #f1c40f;
             --red: #e74c3c;
             --green: #27ae60;
@@ -17,113 +18,95 @@
             padding: 0;
             background-color: var(--bg);
             color: white;
-            font-family: 'Segoe UI', Roboto, sans-serif;
-            /* Centralne pozycjonowanie w Flexbox */
+            font-family: 'Segoe UI', sans-serif;
             display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
+            height: 100vh;
             overflow: hidden;
             touch-action: none;
         }
 
-        #ui-top {
-            text-align: center;
-            margin-bottom: 20px;
-            pointer-events: none;
-            z-index: 10;
+        /* Główny kontener - na desktopie rzędy, na mobile kolumny */
+        #game-wrapper {
+            display: flex;
+            flex-direction: row;
+            width: 100%;
+            height: 100%;
+            align-items: center;
+            justify-content: space-around;
+            padding: 20px;
+            box-sizing: border-box;
         }
 
-        #score {
-            font-size: 4rem;
-            font-weight: 800;
-            color: var(--accent);
-            margin: 0;
-            line-height: 1;
-            text-shadow: 0 0 20px rgba(241, 196, 15, 0.3);
+        /* Panel boczny z wynikami */
+        #sidebar {
+            flex: 0 0 250px;
+            background: var(--panel-bg);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            order: 1; /* Wynik po lewej, zmień na 2 jeśli chcesz po prawej */
         }
 
-        #info {
-            font-size: 1.2rem;
-            color: #aaa;
-            margin-top: 5px;
-            height: 1.5em;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
+        #score-label { font-size: 1rem; color: #888; text-transform: uppercase; }
+        #score { font-size: 4.5rem; font-weight: 900; color: var(--accent); margin: 0; }
+        #info { font-size: 1.2rem; color: #ccc; margin: 15px 0; text-align: center; min-height: 1.5em; }
 
-        #container {
-            width: 90vw;
-            height: 90vw;
-            max-width: 500px;
-            max-height: 500px;
-            position: relative;
-            touch-action: none;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-            border-radius: 50%;
+        /* Kontener tarczy - elastyczny */
+        #board-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            max-height: 90vh;
         }
 
         svg {
-            width: 100%;
-            height: 100%;
-            display: block;
+            height: 95%; /* Tarcza zajmuje niemal całą wysokość */
+            width: auto;
+            aspect-ratio: 1/1;
+            filter: drop-shadow(0 0 30px rgba(0,0,0,0.7));
         }
 
-        .marker {
-            fill: #fff;
-            stroke: #000;
-            stroke-width: 1;
-            pointer-events: none;
-            animation: hit 0.2s ease-out;
-        }
-
-        @keyframes hit {
-            from { r: 15; opacity: 0; }
-            to { r: 4; opacity: 1; }
-        }
-
-        #controls {
-            margin-top: 30px;
-            z-index: 10;
-        }
+        .marker { fill: white; stroke: black; stroke-width: 1; pointer-events: none; animation: hit 0.2s ease-out; }
+        @keyframes hit { from { r: 15; opacity: 0; } to { r: 4; opacity: 1; } }
 
         button {
-            background: transparent;
-            border: 2px solid white;
-            color: white;
-            padding: 10px 25px;
-            font-size: 1rem;
-            border-radius: 30px;
-            cursor: pointer;
-            transition: all 0.2s;
-            text-transform: uppercase;
-            font-weight: bold;
+            background: transparent; border: 2px solid #555; color: white;
+            padding: 12px 20px; border-radius: 10px; cursor: pointer;
+            transition: all 0.2s; font-weight: bold; width: 100%;
         }
+        button:hover { background: white; color: black; border-color: white; }
 
-        button:hover {
-            background: white;
-            color: black;
-        }
-
-        button:active {
-            transform: scale(0.95);
+        /* Adaptacja dla telefonów (układ pionowy) */
+        @media (max-width: 768px) {
+            #game-wrapper { flex-direction: column; padding: 10px; }
+            #sidebar { 
+                flex: 0 0 auto; width: 90%; order: 0; 
+                padding: 15px; margin-bottom: 10px;
+            }
+            #score { font-size: 3rem; }
+            #board-container { width: 100%; height: 60vh; }
         }
     </style>
 </head>
 <body>
 
-<div id="ui-top">
-    <div id="score">0</div>
-    <div id="info">Kliknij, aby rzucić</div>
-</div>
+<div id="game-wrapper">
+    <div id="sidebar">
+        <div id="score-label">Suma punktów</div>
+        <div id="score">0</div>
+        <div id="info">Celuj w środek!</div>
+        <button onclick="resetGame()">Resetuj</button>
+    </div>
 
-<div id="container">
-    <svg id="dartboard" viewBox="-250 -250 500 500"></svg>
-</div>
-
-<div id="controls">
-    <button onclick="resetGame()">Resetuj wynik</button>
+    <div id="board-container">
+        <svg id="dartboard" viewBox="-250 -250 500 500"></svg>
+    </div>
 </div>
 
 <script>
@@ -133,14 +116,7 @@
     let totalScore = 0;
 
     const SECTORS = [20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5];
-    const R = { 
-        doubleOut: 170, 
-        doubleIn: 160, 
-        tripleOut: 110, 
-        tripleIn: 100, 
-        bullOuter: 32, 
-        bullInner: 13 
-    };
+    const R = { doubleOut: 170, doubleIn: 160, tripleOut: 110, tripleIn: 100, bullOuter: 32, bullInner: 13 };
 
     function polarToCart(r, deg) {
         const rad = (deg - 90) * Math.PI / 180;
@@ -154,12 +130,10 @@
         path.setAttribute("d", `M${s1.x},${s1.y} A${r1},${r1} 0 0 1 ${e1.x},${e1.y} L${e2.x},${e2.y} A${r2},${r2} 0 0 0 ${s2.x},${s2.y} Z`);
         path.setAttribute("fill", fill);
         path.setAttribute("stroke", "#333");
-        path.setAttribute("stroke-width", "0.5");
         return path;
     }
 
     function drawBoard() {
-        // Obramowanie czarne
         const bg = document.createElementNS("http://www.w3.org/2000/svg", "circle");
         bg.setAttribute("r", "245"); bg.setAttribute("fill", "black");
         svg.appendChild(bg);
@@ -170,13 +144,11 @@
             const cSingle = isEven ? "#111" : "#eee";
             const cMulti = isEven ? "#e74c3c" : "#27ae60";
 
-            // Pierścienie
             svg.appendChild(createArc(R.doubleIn, R.doubleOut, start, end, cMulti));
             svg.appendChild(createArc(R.tripleOut, R.doubleIn, start, end, cSingle));
             svg.appendChild(createArc(R.tripleIn, R.tripleOut, start, end, cMulti));
             svg.appendChild(createArc(R.bullOuter, R.tripleIn, start, end, cSingle));
 
-            // Numery
             const textPos = polarToCart(210, i * 18);
             const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
             text.setAttribute("x", textPos.x); text.setAttribute("y", textPos.y + 8);
@@ -186,19 +158,17 @@
             svg.appendChild(text);
         }
 
-        // Bullseye
         const b25 = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-        b25.setAttribute("r", R.bullOuter); b25.setAttribute("fill", "#27ae60"); b25.setAttribute("stroke", "#333");
+        b25.setAttribute("r", R.bullOuter); b25.setAttribute("fill", "#27ae60");
         svg.appendChild(b25);
 
         const b50 = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-        b50.setAttribute("r", R.bullInner); b50.setAttribute("fill", "#e74c3c"); b50.setAttribute("stroke", "#333");
+        b50.setAttribute("r", R.bullInner); b50.setAttribute("fill", "#e74c3c");
         svg.appendChild(b50);
 
-        // Grupa na rzutki
-        const markerGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
-        markerGroup.id = "marker-layer";
-        svg.appendChild(markerGroup);
+        const mLayer = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        mLayer.id = "m-layer";
+        svg.appendChild(mLayer);
     }
 
     function handleInput(e) {
@@ -206,7 +176,8 @@
         const clientX = e.touches ? e.touches[0].clientX : e.clientX;
         const clientY = e.touches ? e.touches[0].clientY : e.clientY;
         
-        const x = (clientX - rect.left) * (500 / rect.width) - 250;
+        const scale = 500 / rect.width;
+        const x = (clientX - rect.left) * scale - 250;
         const y = (clientY - rect.top) * (500 / rect.height) - 250;
 
         const dist = Math.sqrt(x*x + y*y);
@@ -214,7 +185,6 @@
         if (angle < 0) angle += 360;
 
         let p = 0, label = "Pudło";
-
         if (dist <= R.bullInner) { p = 50; label = "BULLSEYE!"; }
         else if (dist <= R.bullOuter) { p = 25; label = "Outer Bull"; }
         else if (dist <= R.doubleOut) {
@@ -229,25 +199,21 @@
         scoreEl.innerText = totalScore;
         infoEl.innerText = label;
 
-        // Dodawanie znacznika
         const m = document.createElementNS("http://www.w3.org/2000/svg", "circle");
         m.setAttribute("cx", x); m.setAttribute("cy", y); m.setAttribute("r", "4");
         m.setAttribute("class", "marker");
-        document.getElementById('marker-layer').appendChild(m);
+        document.getElementById('m-layer').appendChild(m);
     }
 
     function resetGame() {
         totalScore = 0;
         scoreEl.innerText = "0";
-        infoEl.innerText = "Zaczynamy od nowa!";
-        document.getElementById('marker-layer').innerHTML = '';
+        infoEl.innerText = "Celuj w środek!";
+        document.getElementById('m-layer').innerHTML = '';
     }
 
-    svg.addEventListener('mousedown', (e) => handleInput(e));
-    svg.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        handleInput(e);
-    }, {passive: false});
+    svg.addEventListener('mousedown', handleInput);
+    svg.addEventListener('touchstart', (e) => { e.preventDefault(); handleInput(e); }, {passive: false});
 
     drawBoard();
 </script>
