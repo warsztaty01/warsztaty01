@@ -3,94 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Dart Pro - Wide Layout</title>
+    <title>Dart Pro - Big Zones</title>
     <style>
         :root {
-            --bg: #1a1a1a;
-            --panel-bg: #252525;
+            --bg: #121212;
+            --panel-bg: #1e1e1e;
             --accent: #f1c40f;
-            --red: #e74c3c;
-            --green: #27ae60;
         }
 
         body {
-            margin: 0;
-            padding: 0;
-            background-color: var(--bg);
-            color: white;
-            font-family: 'Segoe UI', sans-serif;
-            display: flex;
-            height: 100vh;
-            overflow: hidden;
-            touch-action: none;
+            margin: 0; padding: 0; background: var(--bg); color: white;
+            font-family: 'Segoe UI', sans-serif; display: flex; height: 100vh; overflow: hidden;
         }
 
-        /* Główny kontener - na desktopie rzędy, na mobile kolumny */
         #game-wrapper {
-            display: flex;
-            flex-direction: row;
-            width: 100%;
-            height: 100%;
-            align-items: center;
-            justify-content: space-around;
-            padding: 20px;
-            box-sizing: border-box;
+            display: flex; flex-direction: row; width: 100%; height: 100%;
+            align-items: center; justify-content: space-around; padding: 10px; box-sizing: border-box;
         }
 
-        /* Panel boczny z wynikami */
         #sidebar {
-            flex: 0 0 250px;
-            background: var(--panel-bg);
-            padding: 30px;
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            order: 1; /* Wynik po lewej, zmień na 2 jeśli chcesz po prawej */
+            flex: 0 0 220px; background: var(--panel-bg); padding: 25px;
+            border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            display: flex; flex-direction: column; align-items: center; order: 1;
         }
 
-        #score-label { font-size: 1rem; color: #888; text-transform: uppercase; }
-        #score { font-size: 4.5rem; font-weight: 900; color: var(--accent); margin: 0; }
-        #info { font-size: 1.2rem; color: #ccc; margin: 15px 0; text-align: center; min-height: 1.5em; }
+        #score { font-size: 4rem; font-weight: 900; color: var(--accent); margin: 5px 0; }
+        #info { font-size: 1.1rem; color: #aaa; margin-bottom: 20px; text-align: center; height: 2.5em; display: flex; align-items: center; }
 
-        /* Kontener tarczy - elastyczny */
         #board-container {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            max-height: 90vh;
+            flex: 1; display: flex; align-items: center; justify-content: center;
+            height: 100%; position: relative;
         }
 
         svg {
-            height: 95%; /* Tarcza zajmuje niemal całą wysokość */
-            width: auto;
-            aspect-ratio: 1/1;
-            filter: drop-shadow(0 0 30px rgba(0,0,0,0.7));
+            height: 98vh; width: auto; aspect-ratio: 1/1;
+            filter: drop-shadow(0 0 20px rgba(0,0,0,0.8));
+            touch-action: none;
         }
 
-        .marker { fill: white; stroke: black; stroke-width: 1; pointer-events: none; animation: hit 0.2s ease-out; }
-        @keyframes hit { from { r: 15; opacity: 0; } to { r: 4; opacity: 1; } }
+        .marker { fill: white; stroke: black; stroke-width: 1.5; pointer-events: none; animation: hit 0.15s ease-out; }
+        @keyframes hit { from { r: 15; opacity: 0; } to { r: 5; opacity: 1; } }
 
         button {
-            background: transparent; border: 2px solid #555; color: white;
-            padding: 12px 20px; border-radius: 10px; cursor: pointer;
-            transition: all 0.2s; font-weight: bold; width: 100%;
+            background: #333; border: 1px solid #555; color: white;
+            padding: 12px; border-radius: 8px; cursor: pointer;
+            transition: 0.2s; font-weight: bold; width: 100%; text-transform: uppercase;
         }
-        button:hover { background: white; color: black; border-color: white; }
+        button:hover { background: #444; border-color: #777; }
 
-        /* Adaptacja dla telefonów (układ pionowy) */
         @media (max-width: 768px) {
-            #game-wrapper { flex-direction: column; padding: 10px; }
-            #sidebar { 
-                flex: 0 0 auto; width: 90%; order: 0; 
-                padding: 15px; margin-bottom: 10px;
-            }
-            #score { font-size: 3rem; }
-            #board-container { width: 100%; height: 60vh; }
+            #game-wrapper { flex-direction: column; }
+            #sidebar { flex: 0 0 auto; width: 90%; order: 0; padding: 10px; margin-bottom: 5px; }
+            #score { font-size: 2.5rem; }
+            #board-container { height: 70vh; width: 100%; }
+            svg { height: 100%; width: 100%; }
         }
     </style>
 </head>
@@ -98,10 +64,10 @@
 
 <div id="game-wrapper">
     <div id="sidebar">
-        <div id="score-label">Suma punktów</div>
+        <div style="color: #666; font-size: 0.8rem; letter-spacing: 1px;">TOTAL SCORE</div>
         <div id="score">0</div>
-        <div id="info">Celuj w środek!</div>
-        <button onclick="resetGame()">Resetuj</button>
+        <div id="info">Dotknij tarczy!</div>
+        <button onclick="resetGame()">Resetuj Grę</button>
     </div>
 
     <div id="board-container">
@@ -114,9 +80,19 @@
     const scoreEl = document.getElementById('score');
     const infoEl = document.getElementById('info');
     let totalScore = 0;
+    let isFiring = false; // Flaga blokująca wielokrotny strzał przy trzymaniu
 
     const SECTORS = [20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5];
-    const R = { doubleOut: 170, doubleIn: 160, tripleOut: 110, tripleIn: 100, bullOuter: 32, bullInner: 13 };
+    
+    // ZMODYFIKOWANE PROPORCJE (Większe pola premii, mniejsza rama)
+    const R = { 
+        doubleOut: 235, // Rama kończy się prawie na krawędzi (250)
+        doubleIn: 210,  // Szerokość Double: 25 jednostek (wcześniej ~10)
+        tripleOut: 145, 
+        tripleIn: 115,  // Szerokość Triple: 30 jednostek (wcześniej ~10)
+        bullOuter: 35,  // Większy Bull
+        bullInner: 15 
+    };
 
     function polarToCart(r, deg) {
         const rad = (deg - 90) * Math.PI / 180;
@@ -129,19 +105,21 @@
         const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
         path.setAttribute("d", `M${s1.x},${s1.y} A${r1},${r1} 0 0 1 ${e1.x},${e1.y} L${e2.x},${e2.y} A${r2},${r2} 0 0 0 ${s2.x},${s2.y} Z`);
         path.setAttribute("fill", fill);
-        path.setAttribute("stroke", "#333");
+        path.setAttribute("stroke", "#222");
+        path.setAttribute("stroke-width", "1");
         return path;
     }
 
     function drawBoard() {
+        // Tło (czarny brzeg)
         const bg = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-        bg.setAttribute("r", "245"); bg.setAttribute("fill", "black");
+        bg.setAttribute("r", "250"); bg.setAttribute("fill", "black");
         svg.appendChild(bg);
 
         for (let i = 0; i < 20; i++) {
             const start = i * 18 - 9, end = (i + 1) * 18 - 9;
             const isEven = i % 2 === 0;
-            const cSingle = isEven ? "#111" : "#eee";
+            const cSingle = isEven ? "#111" : "#f0f0f0";
             const cMulti = isEven ? "#e74c3c" : "#27ae60";
 
             svg.appendChild(createArc(R.doubleIn, R.doubleOut, start, end, cMulti));
@@ -149,19 +127,19 @@
             svg.appendChild(createArc(R.tripleIn, R.tripleOut, start, end, cMulti));
             svg.appendChild(createArc(R.bullOuter, R.tripleIn, start, end, cSingle));
 
-            const textPos = polarToCart(210, i * 18);
+            // Numery (przesunięte bliżej krawędzi wewnątrz pól Double dla oszczędności miejsca lub na zewnątrz)
+            const textPos = polarToCart(185, i * 18); 
             const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
-            text.setAttribute("x", textPos.x); text.setAttribute("y", textPos.y + 8);
-            text.setAttribute("fill", "white"); text.setAttribute("text-anchor", "middle");
-            text.setAttribute("font-size", "26"); text.setAttribute("font-weight", "bold");
+            text.setAttribute("x", textPos.x); text.setAttribute("y", textPos.y + 6);
+            text.setAttribute("fill", isEven ? "white" : "black"); 
+            text.setAttribute("text-anchor", "middle");
+            text.setAttribute("font-size", "18"); text.setAttribute("font-weight", "bold");
+            text.setAttribute("pointer-events", "none");
             text.textContent = SECTORS[i];
             svg.appendChild(text);
         }
 
-        const b25 = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-        b25.setAttribute("r", R.bullOuter); b25.setAttribute("fill", "#27ae60");
-        svg.appendChild(b25);
-
+        svg.appendChild(createArc(0, R.bullOuter, 0, 360, "#27ae60")); // Outer Bull
         const b50 = document.createElementNS("http://www.w3.org/2000/svg", "circle");
         b50.setAttribute("r", R.bullInner); b50.setAttribute("fill", "#e74c3c");
         svg.appendChild(b50);
@@ -172,19 +150,24 @@
     }
 
     function handleInput(e) {
+        if (isFiring) return; // Jeśli już wciśnięte, nie rób nic
+        isFiring = true;
+
         const rect = svg.getBoundingClientRect();
         const clientX = e.touches ? e.touches[0].clientX : e.clientX;
         const clientY = e.touches ? e.touches[0].clientY : e.clientY;
         
-        const scale = 500 / rect.width;
-        const x = (clientX - rect.left) * scale - 250;
-        const y = (clientY - rect.top) * (500 / rect.height) - 250;
+        const scaleX = 500 / rect.width;
+        const scaleY = 500 / rect.height;
+        const x = (clientX - rect.left) * scaleX - 250;
+        const y = (clientY - rect.top) * scaleY - 250;
 
         const dist = Math.sqrt(x*x + y*y);
         let angle = Math.atan2(y, x) * 180 / Math.PI + 90;
         if (angle < 0) angle += 360;
 
         let p = 0, label = "Pudło";
+
         if (dist <= R.bullInner) { p = 50; label = "BULLSEYE!"; }
         else if (dist <= R.bullOuter) { p = 25; label = "Outer Bull"; }
         else if (dist <= R.doubleOut) {
@@ -200,20 +183,34 @@
         infoEl.innerText = label;
 
         const m = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-        m.setAttribute("cx", x); m.setAttribute("cy", y); m.setAttribute("r", "4");
+        m.setAttribute("cx", x); m.setAttribute("cy", y); m.setAttribute("r", "5");
         m.setAttribute("class", "marker");
         document.getElementById('m-layer').appendChild(m);
+    }
+
+    // Resetowanie flagi po puszczeniu przycisku/palca
+    function stopFiring() {
+        isFiring = false;
     }
 
     function resetGame() {
         totalScore = 0;
         scoreEl.innerText = "0";
-        infoEl.innerText = "Celuj w środek!";
+        infoEl.innerText = "Gotowy na rzut?";
         document.getElementById('m-layer').innerHTML = '';
+        isFiring = false;
     }
 
+    // Obsługa myszy
     svg.addEventListener('mousedown', handleInput);
-    svg.addEventListener('touchstart', (e) => { e.preventDefault(); handleInput(e); }, {passive: false});
+    window.addEventListener('mouseup', stopFiring);
+
+    // Obsługa dotyku
+    svg.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        handleInput(e);
+    }, {passive: false});
+    window.addEventListener('touchend', stopFiring);
 
     drawBoard();
 </script>
