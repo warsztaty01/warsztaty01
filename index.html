@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Dart Pro - Big Zones</title>
+    <title>Dart Pro - Multitouch Fix</title>
     <style>
         :root {
             --bg: #121212;
@@ -49,13 +49,12 @@
             padding: 12px; border-radius: 8px; cursor: pointer;
             transition: 0.2s; font-weight: bold; width: 100%; text-transform: uppercase;
         }
-        button:hover { background: #444; border-color: #777; }
 
         @media (max-width: 768px) {
             #game-wrapper { flex-direction: column; }
             #sidebar { flex: 0 0 auto; width: 90%; order: 0; padding: 10px; margin-bottom: 5px; }
             #score { font-size: 2.5rem; }
-            #board-container { height: 70vh; width: 100%; }
+            #board-container { height: 75vh; width: 100%; }
             svg { height: 100%; width: 100%; }
         }
     </style>
@@ -66,7 +65,7 @@
     <div id="sidebar">
         <div style="color: #666; font-size: 0.8rem; letter-spacing: 1px;">TOTAL SCORE</div>
         <div id="score">0</div>
-        <div id="info">Dotknij tarczy!</div>
+        <div id="info">Szybkie strzały włączone!</div>
         <button onclick="resetGame()">Resetuj Grę</button>
     </div>
 
@@ -80,17 +79,14 @@
     const scoreEl = document.getElementById('score');
     const infoEl = document.getElementById('info');
     let totalScore = 0;
-    let isFiring = false; // Flaga blokująca wielokrotny strzał przy trzymaniu
 
     const SECTORS = [20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5];
-    
-    // ZMODYFIKOWANE PROPORCJE (Większe pola premii, mniejsza rama)
     const R = { 
-        doubleOut: 235, // Rama kończy się prawie na krawędzi (250)
-        doubleIn: 210,  // Szerokość Double: 25 jednostek (wcześniej ~10)
+        doubleOut: 240, 
+        doubleIn: 215,  
         tripleOut: 145, 
-        tripleIn: 115,  // Szerokość Triple: 30 jednostek (wcześniej ~10)
-        bullOuter: 35,  // Większy Bull
+        tripleIn: 115,  
+        bullOuter: 35,  
         bullInner: 15 
     };
 
@@ -106,12 +102,10 @@
         path.setAttribute("d", `M${s1.x},${s1.y} A${r1},${r1} 0 0 1 ${e1.x},${e1.y} L${e2.x},${e2.y} A${r2},${r2} 0 0 0 ${s2.x},${s2.y} Z`);
         path.setAttribute("fill", fill);
         path.setAttribute("stroke", "#222");
-        path.setAttribute("stroke-width", "1");
         return path;
     }
 
     function drawBoard() {
-        // Tło (czarny brzeg)
         const bg = document.createElementNS("http://www.w3.org/2000/svg", "circle");
         bg.setAttribute("r", "250"); bg.setAttribute("fill", "black");
         svg.appendChild(bg);
@@ -127,19 +121,18 @@
             svg.appendChild(createArc(R.tripleIn, R.tripleOut, start, end, cMulti));
             svg.appendChild(createArc(R.bullOuter, R.tripleIn, start, end, cSingle));
 
-            // Numery (przesunięte bliżej krawędzi wewnątrz pól Double dla oszczędności miejsca lub na zewnątrz)
-            const textPos = polarToCart(185, i * 18); 
+            const textPos = polarToCart(190, i * 18); 
             const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
             text.setAttribute("x", textPos.x); text.setAttribute("y", textPos.y + 6);
             text.setAttribute("fill", isEven ? "white" : "black"); 
             text.setAttribute("text-anchor", "middle");
-            text.setAttribute("font-size", "18"); text.setAttribute("font-weight", "bold");
+            text.setAttribute("font-size", "20"); text.setAttribute("font-weight", "bold");
             text.setAttribute("pointer-events", "none");
             text.textContent = SECTORS[i];
             svg.appendChild(text);
         }
 
-        svg.appendChild(createArc(0, R.bullOuter, 0, 360, "#27ae60")); // Outer Bull
+        svg.appendChild(createArc(0, R.bullOuter, 0, 360, "#27ae60"));
         const b50 = document.createElementNS("http://www.w3.org/2000/svg", "circle");
         b50.setAttribute("r", R.bullInner); b50.setAttribute("fill", "#e74c3c");
         svg.appendChild(b50);
@@ -149,14 +142,9 @@
         svg.appendChild(mLayer);
     }
 
-    function handleInput(e) {
-        if (isFiring) return; // Jeśli już wciśnięte, nie rób nic
-        isFiring = true;
-
+    // GŁÓWNA FUNKCJA OBLICZAJĄCA (PRZYJMUJE WSPÓŁRZĘDNE)
+    function processShot(clientX, clientY) {
         const rect = svg.getBoundingClientRect();
-        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        
         const scaleX = 500 / rect.width;
         const scaleY = 500 / rect.height;
         const x = (clientX - rect.left) * scaleX - 250;
@@ -188,29 +176,28 @@
         document.getElementById('m-layer').appendChild(m);
     }
 
-    // Resetowanie flagi po puszczeniu przycisku/palca
-    function stopFiring() {
-        isFiring = false;
-    }
+    // Obsługa myszy (zostawiamy klasycznie)
+    svg.addEventListener('mousedown', (e) => {
+        processShot(e.clientX, e.clientY);
+    });
+
+    // NOWA OBSŁUGA DOTYKU (NAPRAWIA MULTITOUCH)
+    svg.addEventListener('touchstart', (e) => {
+        e.preventDefault(); // Blokuje scrollowanie i ghost-clicki
+        
+        // Iterujemy po KAŻDYM nowym dotknięciu palca
+        for (let i = 0; i < e.changedTouches.length; i++) {
+            const touch = e.changedTouches[i];
+            processShot(touch.clientX, touch.clientY);
+        }
+    }, {passive: false});
 
     function resetGame() {
         totalScore = 0;
         scoreEl.innerText = "0";
-        infoEl.innerText = "Gotowy na rzut?";
+        infoEl.innerText = "Nowa partia!";
         document.getElementById('m-layer').innerHTML = '';
-        isFiring = false;
     }
-
-    // Obsługa myszy
-    svg.addEventListener('mousedown', handleInput);
-    window.addEventListener('mouseup', stopFiring);
-
-    // Obsługa dotyku
-    svg.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        handleInput(e);
-    }, {passive: false});
-    window.addEventListener('touchend', stopFiring);
 
     drawBoard();
 </script>
