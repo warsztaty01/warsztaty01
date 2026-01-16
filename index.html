@@ -3,83 +3,76 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Dart Pro - Fixed Layout</title>
+    <title>Dart Pro - Elite Edition</title>
     <style>
         :root {
             --bg: #0f1215; --panel: #1c2229; --accent: #00d2ff;
-            --p1: #3498db; --p2: #e67e22;
+            --p1: #3498db; --p2: #e67e22; --win: #2ecc71;
         }
 
         body {
             margin: 0; padding: 0; background: var(--bg); color: white;
             font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column;
-            height: 100vh; width: 100vw; overflow: hidden; /* Blokada przesuwania całej strony */
+            height: 100vh; width: 100vw; overflow: hidden;
         }
 
         header {
-            flex: 0 0 auto; /* Nagłówek ma stałą wysokość */
-            background: var(--panel); padding: 10px 20px; display: flex; 
-            justify-content: space-between; align-items: center; border-bottom: 2px solid #2d3640;
+            flex: 0 0 auto; background: var(--panel); padding: 10px 20px; 
+            display: flex; justify-content: space-between; align-items: center; 
+            border-bottom: 2px solid #2d3640; z-index: 10;
         }
 
         #game-wrapper {
-            flex: 1; /* Zajmuje całą resztę miejsca między headerem a dołem */
-            display: flex; width: 100%; padding: 10px; box-sizing: border-box; gap: 10px;
-            min-height: 0; /* Kluczowe dla Flexbox, by dzieci mogły się przewijać */
+            flex: 1; display: flex; width: 100%; padding: 10px; box-sizing: border-box; gap: 10px; min-height: 0;
         }
 
         .side-panel {
             flex: 0 0 240px; background: var(--panel); padding: 15px;
             border-radius: 12px; display: flex; flex-direction: column;
-            max-height: 100%; /* Nie może urosnąć bardziej niż wrapper */
-            box-sizing: border-box;
+            max-height: 100%; box-sizing: border-box;
         }
 
-        #board-container {
-            flex: 1; display: flex; align-items: center; justify-content: center;
-            min-width: 0; overflow: hidden;
+        #board-container { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; }
+        svg { max-height: 100%; max-width: 100%; aspect-ratio: 1/1; touch-action: none; filter: drop-shadow(0 0 20px rgba(0,0,0,0.5)); }
+
+        /* EKRAN ZWYCIĘSTWA */
+        #win-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 18, 21, 0.85); backdrop-filter: blur(8px);
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 100; border-radius: 12px; animation: fadeIn 0.5s ease;
         }
 
-        svg {
-            max-height: 100%; max-width: 100%; aspect-ratio: 1/1;
-            touch-action: none; filter: drop-shadow(0 0 20px rgba(0,0,0,0.5));
+        .win-card {
+            background: var(--panel); padding: 40px; border-radius: 20px;
+            text-align: center; border: 2px solid var(--win);
+            box-shadow: 0 0 50px rgba(46, 204, 113, 0.3); transform: scale(1);
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
-        /* --- STYLIZACJA HISTORII (NAPRAWA) --- */
-        #history-container {
-            flex: 1; 
-            overflow-y: auto; /* Przewijanie tylko wewnątrz listy */
-            margin-top: 10px;
-            padding-right: 5px;
-            border-top: 1px solid #333;
-        }
+        .win-title { font-size: 1.2rem; color: var(--accent); letter-spacing: 2px; }
+        .win-name { font-size: 3rem; font-weight: 900; margin: 10px 0; }
+        .win-stats { font-size: 1.5rem; color: #888; margin-bottom: 20px; }
 
-        /* Stylizacja scrollbara dla nowoczesnego wyglądu */
-        #history-container::-webkit-scrollbar { width: 5px; }
-        #history-container::-webkit-scrollbar-thumb { background: #444; border-radius: 10px; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
-        .hist-row {
-            display: flex; justify-content: space-between; padding: 8px 0;
-            border-bottom: 1px solid #2d3640; font-size: 0.85rem;
-            animation: fadeIn 0.3s ease;
-        }
-
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* Reszta styli bez zmian */
+        /* RESZTA UI */
         .player-card { padding: 12px; border-radius: 8px; margin-bottom: 8px; border-left: 5px solid transparent; background: #252d37; opacity: 0.6; }
-        .player-card.active { opacity: 1; border-left-color: var(--accent); background: #2d3a4a; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        .player-card.active { opacity: 1; border-left-color: var(--accent); background: #2d3a4a; }
         .score-val { font-size: 2.8rem; font-weight: 900; line-height: 1; }
+        .round-indicator { font-size: 1rem; color: var(--accent); font-weight: bold; margin-bottom: 10px; text-align: center; }
+        #history-container { flex: 1; overflow-y: auto; margin-top: 10px; padding-right: 5px; border-top: 1px solid #333; }
+        .hist-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #2d3640; font-size: 0.85rem; }
         .btn-group { display: flex; gap: 5px; }
-        button { background: #2d3640; border: none; color: white; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        button { background: #2d3640; border: none; color: white; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; }
         button.active-opt { background: var(--accent); color: black; }
-        #undo-btn { background: #e74c3c; width: 100%; margin-top: 10px; }
+        .btn-win { background: var(--win); color: white; font-size: 1.1rem; padding: 12px 30px; margin-top: 10px; }
         .marker { fill: white; stroke: black; stroke-width: 1.5; pointer-events: none; }
 
         @media (max-width: 1000px) {
-            #game-wrapper { flex-direction: column; overflow-y: auto; }
-            .side-panel { flex: none; width: 100%; max-height: 300px; }
-            #board-container { height: 60vh; flex: none; }
+            #game-wrapper { flex-direction: column; }
+            .side-panel { flex: none; width: 100%; max-height: 250px; }
         }
     </style>
 </head>
@@ -87,15 +80,20 @@
 
 <header>
     <div class="btn-group">
+        <button id="mode-classic" class="active-opt" onclick="setGameMode('classic')">Klasyczny</button>
+        <button id="mode-battle" onclick="setGameMode('battle')">Bitwa 1vs1</button>
+    </div>
+    
+    <div id="classic-scores" class="btn-group">
         <button class="score-opt" onclick="setStartScore(301)">301</button>
         <button class="score-opt" onclick="setStartScore(401)">401</button>
         <button class="score-opt active-opt" onclick="setStartScore(501)">501</button>
     </div>
-    <div id="hint-text" style="color: var(--accent); font-weight: bold; font-size: 1.2rem;">T20 - T20 - T20</div>
 </header>
 
 <div id="game-wrapper">
     <div class="side-panel">
+        <div id="round-info" class="round-indicator" style="display:none;">Runda: 1 / 3</div>
         <div id="p1-card" class="player-card active">
             <small style="color:var(--p1); font-weight: bold;">GRACZ 1</small>
             <div id="p1-score" class="score-val">501</div>
@@ -104,19 +102,28 @@
             <small style="color:var(--p2); font-weight: bold;">GRACZ 2</small>
             <div id="p2-score" class="score-val">501</div>
         </div>
-        <div style="text-align:center; margin: 10px 0; background: #111; padding: 5px; border-radius: 5px;">
-            RZUTY: <span id="throws-count" style="color:var(--accent); font-weight: bold;">0</span> / 3
+        <div style="text-align:center; margin: 10px 0; background: #111; padding: 8px; border-radius: 5px;">
+            RZUTY: <span id="throws-count" style="color:var(--accent); font-weight: bold;">0</span> / <span id="max-throws">3</span>
         </div>
-        <button id="undo-btn" onclick="undoLastMove()">Cofnij ruch</button>
-        <button onclick="resetGame()" style="margin-top:5px; background: #444; font-size: 0.8rem;">Restart</button>
+        <button onclick="undoLastMove()" style="background:#e74c3c; margin-bottom:5px;">Cofnij rzut</button>
+        <button onclick="resetGame()" style="background:#444;">Restart</button>
     </div>
 
     <div id="board-container">
+        <div id="win-overlay">
+            <div class="win-card">
+                <div class="win-title">CHAMPION</div>
+                <div id="winner-name" class="win-name">GRACZ 1</div>
+                <div id="winner-stats" class="win-stats">501 - 234</div>
+                <button class="btn-win" onclick="resetGame()">ZAGRAJ PONOWNIE</button>
+            </div>
+        </div>
+
         <svg id="dartboard" viewBox="-250 -250 500 500"></svg>
     </div>
 
     <div class="side-panel">
-        <strong style="font-size: 0.8rem; letter-spacing: 1px; color: #888;">HISTORIA MECZU</strong>
+        <strong style="font-size: 0.8rem; letter-spacing: 1px; color: #888;">HISTORIA</strong>
         <div id="history-container">
             <div id="history-list"></div>
         </div>
@@ -124,30 +131,24 @@
 </div>
 
 <script>
-    // Logika skryptu pozostaje ta sama co wcześniej, z drobnymi poprawkami UI
     const svg = document.getElementById('dartboard');
     const SECTORS = [20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5];
     const R = { doubleOut: 240, doubleIn: 215, tripleOut: 145, tripleIn: 115, bullOuter: 35, bullInner: 15 };
 
-    let startScore = 501;
-    let game = { currentPlayer: 1, scores: { 1: 501, 2: 501 }, throws: 0, fullHistory: [] };
-
-    const CHECKOUTS = { 170: "T20-T20-BULL", 167: "T20-T19-BULL", 164: "T20-T18-BULL", 161: "T20-T17-BULL", 160: "T20-T20-D20", 40: "D20", 32: "D16", 16: "D8", 8: "D4", 4: "D2", 2: "D1" };
+    let game = { mode: 'classic', startScore: 501, currentPlayer: 1, scores: { 1: 501, 2: 501 }, throws: 0, maxThrows: 3, currentRound: 1, maxRounds: 3, fullHistory: [] };
 
     function drawBoard() {
-        const bg = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-        bg.setAttribute("r", "250"); bg.setAttribute("fill", "black");
-        svg.appendChild(bg);
-
         const createArc = (r1, r2, start, end, fill) => {
             const rad = (d) => (d - 90) * Math.PI / 180;
             const s1 = {x: r1*Math.cos(rad(start)), y: r1*Math.sin(rad(start))}, e1 = {x: r1*Math.cos(rad(end)), y: r1*Math.sin(rad(end))};
             const s2 = {x: r2*Math.cos(rad(start)), y: r2*Math.sin(rad(start))}, e2 = {x: r2*Math.cos(rad(end)), y: r2*Math.sin(rad(end))};
             const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
             path.setAttribute("d", `M${s1.x},${s1.y} A${r1},${r1} 0 0 1 ${e1.x},${e1.y} L${e2.x},${e2.y} A${r2},${r2} 0 0 0 ${s2.x},${s2.y} Z`);
-            path.setAttribute("fill", fill); path.setAttribute("stroke", "#222");
-            return path;
+            path.setAttribute("fill", fill); path.setAttribute("stroke", "#222"); return path;
         };
+
+        const bg = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        bg.setAttribute("r", "250"); bg.setAttribute("fill", "black"); svg.appendChild(bg);
 
         for (let i = 0; i < 20; i++) {
             const start = i * 18 - 9, end = (i + 1) * 18 - 9;
@@ -156,7 +157,6 @@
             svg.appendChild(createArc(R.tripleOut, R.doubleIn, start, end, isEven ? "#111" : "#eee"));
             svg.appendChild(createArc(R.tripleIn, R.tripleOut, start, end, isEven ? "#e74c3c" : "#27ae60"));
             svg.appendChild(createArc(R.bullOuter, R.tripleIn, start, end, isEven ? "#111" : "#eee"));
-
             const ang = (i*18-90)*Math.PI/180;
             const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
             text.setAttribute("x", 190*Math.cos(ang)); text.setAttribute("y", 190*Math.sin(ang)+7);
@@ -171,6 +171,7 @@
     }
 
     function processShot(clientX, clientY) {
+        if (document.getElementById('win-overlay').style.display === 'flex') return;
         const rect = svg.getBoundingClientRect();
         const x = (clientX - rect.left) * (500 / rect.width) - 250;
         const y = (clientY - rect.top) * (500 / rect.height) - 250;
@@ -188,24 +189,76 @@
             p = SECTORS[secIdx] * mult;
         }
 
-        const isBust = (game.scores[game.currentPlayer] - p < 0 || game.scores[game.currentPlayer] - p === 1);
-        
-        game.fullHistory.push({ 
-            player: game.currentPlayer, points: p, label: label, 
-            x: x, y: y, isBust: isBust, prevThrows: game.throws 
-        });
+        handleShot(p, label, x, y);
+    }
 
-        if (!isBust) {
-            game.scores[game.currentPlayer] -= p;
-            if (game.scores[game.currentPlayer] === 0) { alert(`GRACZ ${game.currentPlayer} WYGRAŁ!`); resetGame(); return; }
+    function handleShot(p, label, x, y) {
+        const isBust = (game.mode === 'classic' && (game.scores[game.currentPlayer] - p < 0 || game.scores[game.currentPlayer] - p === 1));
+        game.fullHistory.push({ player: game.currentPlayer, points: p, label, x, y, isBust, round: game.currentRound });
+
+        if (game.mode === 'classic') {
+            if (!isBust) {
+                game.scores[game.currentPlayer] -= p;
+                if (game.scores[game.currentPlayer] === 0) return showWin(game.currentPlayer);
+            } else { game.throws = 2; }
         } else {
-            alert("BUST!");
-            game.throws = 2; 
+            game.scores[game.currentPlayer] += p;
         }
 
         game.throws++;
-        refreshUI();
-        if (game.throws >= 3) setTimeout(nextTurn, 800);
+        updateUI();
+        if (game.throws >= game.maxThrows) setTimeout(nextTurn, 600);
+    }
+
+    function showWin(player) {
+        const overlay = document.getElementById('win-overlay');
+        const nameDisplay = document.getElementById('winner-name');
+        const statsDisplay = document.getElementById('winner-stats');
+        
+        overlay.style.display = 'flex';
+        nameDisplay.innerText = `GRACZ ${player}`;
+        nameDisplay.style.color = player === 1 ? 'var(--p1)' : 'var(--p2)';
+        statsDisplay.innerText = `${game.scores[1]} - ${game.scores[2]}`;
+    }
+
+    function nextTurn() {
+        if (game.mode === 'battle' && game.currentPlayer === 2) {
+            if (game.currentRound >= game.maxRounds) {
+                const winner = game.scores[1] > game.scores[2] ? 1 : (game.scores[2] > game.scores[1] ? 2 : 0);
+                return showWin(winner || "REMIS");
+            }
+            game.currentRound++;
+        }
+        game.throws = 0;
+        game.currentPlayer = game.currentPlayer === 1 ? 2 : 1;
+        updateUI();
+    }
+
+    function updateUI() {
+        document.getElementById('p1-score').innerText = game.scores[1];
+        document.getElementById('p2-score').innerText = game.scores[2];
+        document.getElementById('throws-count').innerText = game.throws;
+        document.getElementById('max-throws').innerText = game.maxThrows;
+        document.getElementById('round-info').innerText = `Runda: ${game.currentRound} / ${game.maxRounds}`;
+        document.getElementById('p1-card').className = 'player-card' + (game.currentPlayer === 1 ? ' active' : '');
+        document.getElementById('p2-card').className = 'player-card' + (game.currentPlayer === 2 ? ' active' : '');
+        
+        const list = document.getElementById('history-list');
+        list.innerHTML = '';
+        [...game.fullHistory].reverse().forEach(s => {
+            const row = document.createElement('div');
+            row.className = 'hist-row';
+            row.innerHTML = `<span>G${s.player} (R${s.round}): ${s.label}</span><span>${game.mode === 'classic' ? '-' : '+'}${s.points}</span>`;
+            list.appendChild(row);
+        });
+
+        const mLayer = document.getElementById('m-layer');
+        mLayer.innerHTML = '';
+        game.fullHistory.filter(h => h.player === game.currentPlayer && h.round === game.currentRound).forEach(s => {
+            const m = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            m.setAttribute("cx", s.x); m.setAttribute("cy", s.y); m.setAttribute("r", "5");
+            m.setAttribute("class", "marker"); mLayer.appendChild(m);
+        });
     }
 
     function undoLastMove() {
@@ -213,91 +266,40 @@
         const last = game.fullHistory.pop();
         if (last.player !== game.currentPlayer) {
             game.currentPlayer = last.player;
-            document.getElementById('p1-card').classList.toggle('active');
-            document.getElementById('p2-card').classList.toggle('active');
+            game.currentRound = last.round;
         }
-        if (!last.isBust) game.scores[last.player] += last.points;
-        game.throws = last.prevThrows;
-        
-        // Czyścimy markery i listę historii w UI i generujemy je od nowa
-        document.getElementById('m-layer').innerHTML = '';
-        document.getElementById('history-list').innerHTML = '';
-        
-        // Odtwarzamy rzuty w tarczy dla obecnej tury
-        game.fullHistory.slice(-game.throws).forEach(shot => {
-             const m = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-             m.setAttribute("cx", shot.x); m.setAttribute("cy", shot.y); m.setAttribute("r", "5");
-             m.setAttribute("class", "marker"); document.getElementById('m-layer').appendChild(m);
-        });
-
-        // Odtwarzamy listę historii
-        const tempHistory = [...game.fullHistory].reverse();
-        tempHistory.forEach(shot => {
-            const row = document.createElement('div');
-            row.className = 'hist-row';
-            row.innerHTML = `<span>G${shot.player}: ${shot.label}</span><span>-${shot.points}</span>`;
-            document.getElementById('history-list').appendChild(row);
-        });
-
-        refreshUI(true);
+        if (game.mode === 'classic') { if (!last.isBust) game.scores[last.player] += last.points; }
+        else { game.scores[last.player] -= last.points; }
+        game.throws--;
+        if (game.throws < 0) game.throws = game.maxThrows - 1;
+        updateUI();
     }
 
-    function refreshUI(isUndo = false) {
-        document.getElementById('p1-score').innerText = game.scores[1];
-        document.getElementById('p2-score').innerText = game.scores[2];
-        document.getElementById('throws-count').innerText = game.throws;
-        
-        if (!isUndo && game.fullHistory.length > 0) {
-            const last = game.fullHistory[game.fullHistory.length-1];
-            const histRow = document.createElement('div');
-            histRow.className = 'hist-row';
-            histRow.innerHTML = `<span>G${last.player}: ${last.label}</span><span>-${last.points}</span>`;
-            document.getElementById('history-list').prepend(histRow);
-
-            const m = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-            m.setAttribute("cx", last.x); m.setAttribute("cy", last.y); m.setAttribute("r", "5");
-            m.setAttribute("class", "marker"); document.getElementById('m-layer').appendChild(m);
-        }
-
-        const s = game.scores[game.currentPlayer];
-        const h = document.getElementById('hint-text');
-        if (s > 170) h.innerText = "Celuj w T20";
-        else h.innerText = CHECKOUTS[s] || (s <= 40 && s % 2 === 0 ? "D"+(s/2) : "Zostaw D20/D16");
-    }
-
-    function nextTurn() {
-        game.throws = 0;
-        game.currentPlayer = game.currentPlayer === 1 ? 2 : 1;
-        document.getElementById('p1-card').classList.toggle('active');
-        document.getElementById('p2-card').classList.toggle('active');
-        document.getElementById('m-layer').innerHTML = '';
-        refreshUI(true);
+    function setGameMode(mode) {
+        game.mode = mode;
+        document.getElementById('mode-classic').classList.toggle('active-opt', mode === 'classic');
+        document.getElementById('mode-battle').classList.toggle('active-opt', mode === 'battle');
+        document.getElementById('classic-scores').style.display = mode === 'classic' ? 'flex' : 'none';
+        document.getElementById('round-info').style.display = mode === 'battle' ? 'block' : 'none';
+        resetGame();
     }
 
     function setStartScore(val) {
-        startScore = val;
-        document.querySelectorAll('.score-opt').forEach(b => b.classList.remove('active-opt'));
-        event.currentTarget.classList.add('active-opt');
+        game.startScore = val;
+        document.querySelectorAll('.score-opt').forEach(b => b.classList.toggle('active-opt', parseInt(b.innerText) === val));
         resetGame();
     }
 
     function resetGame() {
-        game.scores = { 1: startScore, 2: startScore };
-        game.throws = 0; game.currentPlayer = 1; game.fullHistory = [];
-        document.getElementById('history-list').innerHTML = '';
-        document.getElementById('m-layer').innerHTML = '';
-        document.getElementById('p1-card').classList.add('active');
-        document.getElementById('p2-card').classList.remove('active');
-        refreshUI(true);
+        document.getElementById('win-overlay').style.display = 'none';
+        game.currentPlayer = 1; game.throws = 0; game.currentRound = 1; game.fullHistory = [];
+        if (game.mode === 'classic') { game.scores = { 1: game.startScore, 2: game.startScore }; game.maxThrows = 3; }
+        else { game.scores = { 1: 0, 2: 0 }; game.maxThrows = 5; }
+        updateUI();
     }
 
     svg.addEventListener('mousedown', (e) => processShot(e.clientX, e.clientY));
-    svg.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        for (let t of e.changedTouches) processShot(t.clientX, t.clientY);
-    }, {passive: false});
-
-    drawBoard(); refreshUI(true);
+    drawBoard(); resetGame();
 </script>
 </body>
 </html>
