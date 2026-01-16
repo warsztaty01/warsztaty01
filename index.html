@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Dart Pro - Full Version Fixed</title>
+    <title>Dart Pro - Battle Mode Fixed</title>
     <style>
         :root {
             --bg: #0f1215; --panel: #1c2229; --accent: #00d2ff;
@@ -46,6 +46,8 @@
         
         #history-list { font-size: 0.85rem; overflow-y: auto; flex: 1; margin-top: 10px; }
         .hist-item { padding: 5px 0; border-bottom: 1px solid #333; display: flex; justify-content: space-between; }
+        
+        .round-info { background: #111; padding: 10px; border-radius: 8px; margin-bottom: 10px; text-align: center; border: 1px solid #333; }
     </style>
 </head>
 <body>
@@ -64,6 +66,10 @@
 
 <div id="game-wrapper">
     <div class="side-panel">
+        <div class="round-info">
+            <small style="color: #888;">STATUS GRY</small>
+            <div id="round-display" style="font-weight: bold; color: var(--accent);">RUNDA: 1 / 3</div>
+        </div>
         <div id="p1-card" class="player-card active">
             <small style="color:var(--p1)">GRACZ 1</small>
             <div id="p1-score" class="score-val">501</div>
@@ -82,6 +88,7 @@
         <div id="win-overlay">
             <div style="text-align:center; background:var(--panel); padding:40px; border-radius:20px; border:2px solid var(--win);">
                 <div id="winner-name" style="font-size: 3rem; font-weight: 900;"></div>
+                <div id="winner-score-final" style="font-size: 1.5rem; margin-top: 10px; color: #888;"></div>
                 <button onclick="resetGame()" style="background:var(--win); padding: 15px 30px; border-radius:10px; color:white; border:none; font-weight:bold; margin-top: 20px;">ZAGRAJ PONOWNIE</button>
             </div>
         </div>
@@ -89,7 +96,7 @@
     </div>
 
     <div class="side-panel">
-        <strong style="font-size: 0.8rem; color: #888; text-transform: uppercase;">Historia rundy</strong>
+        <strong style="font-size: 0.8rem; color: #888; text-transform: uppercase;">Historia rzutów</strong>
         <div id="history-list"></div>
     </div>
 </div>
@@ -102,7 +109,7 @@
     let game = {
         mode: 'classic', startScore: 501, isSpinning: false, rotation: 0,
         currentPlayer: 1, scores: { 1: 501, 2: 501 }, throws: 0, maxThrows: 3,
-        history: []
+        history: [], currentRound: 1, maxRounds: 3
     };
 
     function drawBoard() {
@@ -172,7 +179,6 @@
             pts = base * m;
         }
 
-        // Dodanie rzutki do kręcącej się grupy
         const rad = (boardAngle - 90) * Math.PI / 180;
         const m = document.createElementNS("http://www.w3.org/2000/svg", "circle");
         m.setAttribute("cx", dist * Math.cos(rad)); m.setAttribute("cy", dist * Math.sin(rad));
@@ -187,7 +193,7 @@
         const cur = game.scores[game.currentPlayer];
         if (game.mode === 'classic') {
             if (cur - p < 0 || cur - p === 1) { 
-                game.throws = 2; // Wymuś koniec tury (fura)
+                game.throws = 2;
                 label = "BUST!"; p = 0;
             } else {
                 game.scores[game.currentPlayer] -= p;
@@ -196,14 +202,14 @@
             game.scores[game.currentPlayer] += p;
         }
 
-        game.history.unshift({ p, label, player: game.currentPlayer });
+        game.history.unshift({ p, label, player: game.currentPlayer, round: game.currentRound });
         game.throws++;
         updateUI();
 
         if (game.mode === 'classic' && game.scores[game.currentPlayer] === 0) {
             showWin("GRACZ " + game.currentPlayer);
         } else if (game.throws >= game.maxThrows) {
-            setTimeout(nextTurn, 1000);
+            setTimeout(nextTurn, 800);
         }
     }
 
@@ -212,12 +218,25 @@
         document.getElementById('p2-score').innerText = game.scores[2];
         document.getElementById('throws-count').innerText = game.throws;
         document.getElementById('max-throws').innerText = game.maxThrows;
+        document.getElementById('round-display').innerText = game.mode === 'battle' ? `RUNDA: ${game.currentRound} / ${game.maxRounds}` : "TRYB CIĄGŁY";
         
         const hl = document.getElementById('history-list');
         hl.innerHTML = game.history.map(h => `<div class="hist-item"><span>G${h.player}: ${h.label}</span><b>${h.p}</b></div>`).join('');
     }
 
     function nextTurn() {
+        // Logika zmiany gracza i rundy w trybie bitwy
+        if (game.mode === 'battle') {
+            if (game.currentPlayer === 2) {
+                if (game.currentRound >= game.maxRounds) {
+                    const w = game.scores[1] > game.scores[2] ? 1 : (game.scores[2] > game.scores[1] ? 2 : 0);
+                    showWin(w === 0 ? "REMIS" : "GRACZ " + w);
+                    return;
+                }
+                game.currentRound++;
+            }
+        }
+
         game.throws = 0;
         game.currentPlayer = game.currentPlayer === 1 ? 2 : 1;
         document.getElementById('dart-layer').innerHTML = '';
@@ -243,17 +262,20 @@
     }
 
     function resetGame() {
+        game.currentRound = 1;
         game.scores = { 1: (game.mode === 'classic' ? game.startScore : 0), 2: (game.mode === 'classic' ? game.startScore : 0) };
         game.throws = 0; game.currentPlayer = 1; game.history = [];
         document.getElementById('dart-layer').innerHTML = '';
         document.getElementById('win-overlay').style.display = 'none';
-        nextTurn(); nextTurn(); // Reset UI classes
+        document.getElementById('p1-card').classList.add('active');
+        document.getElementById('p2-card').classList.remove('active');
         updateUI();
     }
 
     function showWin(txt) {
         document.getElementById('win-overlay').style.display = 'flex';
-        document.getElementById('winner-name').innerText = txt + " WYGRYWA!";
+        document.getElementById('winner-name').innerText = txt === "REMIS" ? txt : txt + " WYGRYWA!";
+        document.getElementById('winner-score-final').innerText = `WYNIK KOŃCOWY: ${game.scores[1]} - ${game.scores[2]}`;
     }
 
     drawBoard(); resetGame(); animate();
