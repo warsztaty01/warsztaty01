@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Dart Pro - Spin Master Ultimate</title>
+    <title>Dart Pro - Spin Master Fixed v3</title>
     <style>
         :root {
             --bg: #0f1215; --panel: #1c2229; --accent: #00d2ff;
@@ -24,24 +24,22 @@
         #board-container { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; }
         #dartboard { max-height: 95%; max-width: 95%; aspect-ratio: 1/1; touch-action: none; cursor: crosshair; }
 
-        .player-card { padding: 12px; border-radius: 8px; margin-bottom: 8px; border-left: 5px solid transparent; background: #252d37; opacity: 0.5; transition: 0.3s; }
+        .player-card { padding: 12px; border-radius: 8px; margin-bottom: 8px; border-left: 5px solid transparent; background: #252d37; opacity: 0.5; }
         .player-card.active { opacity: 1; border-left-color: var(--accent); background: #2d3a4a; }
         .score-val { font-size: 2.8rem; font-weight: 900; }
         
-        .marker { stroke: #000; stroke-width: 1.5; pointer-events: none; animation: dartIn 0.1s ease-out; }
-        @keyframes dartIn { from { transform: scale(3); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .marker { stroke: white; stroke-width: 1; pointer-events: none; }
 
         #win-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(15, 18, 21, 0.95); backdrop-filter: blur(10px);
-            display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 100;
+            background: rgba(15, 18, 21, 0.95); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 100;
         }
 
         .btn-group { display: flex; gap: 5px; }
         button { background: #2d3640; border: none; color: white; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; }
         button.active-opt { background: var(--accent); color: black; }
         
-        @media (max-width: 1000px) { #game-wrapper { flex-direction: column; } .side-panel { flex: none; width: 100%; } }
+        #debug-info { position: absolute; bottom: 10px; left: 10px; font-family: monospace; font-size: 10px; color: #555; pointer-events: none; }
     </style>
 </head>
 <body>
@@ -64,40 +62,38 @@
             <small style="color:var(--p2)">GRACZ 2</small>
             <div id="p2-score" class="score-val">501</div>
         </div>
-        <div style="text-align:center; padding: 10px; background: #111; border-radius: 5px; margin-top: auto;">
-            RZUTY: <span id="throws-count" style="color:var(--accent); font-size: 1.2rem;">0</span> / <span id="max-throws">3</span>
+        <div style="text-align:center; padding: 10px; background: #111; border-radius: 5px;">
+            RZUTY: <span id="throws-count">0</span> / 3
         </div>
-        <button onclick="resetGame()" style="background:#444; margin-top:10px;">Restart</button>
+        <button onclick="resetGame()" style="margin-top:10px;">Reset</button>
     </div>
 
     <div id="board-container">
         <div id="win-overlay">
-            <div style="text-align:center; background:var(--panel); padding:40px; border-radius:20px; border:2px solid var(--win);">
-                <div id="winner-name" style="font-size: 3rem; font-weight: 900;"></div>
-                <div id="winner-stats" style="font-size: 1.5rem; color: #888; margin: 20px 0;"></div>
-                <button onclick="resetGame()" style="background:var(--win); padding: 15px 30px; border-radius:10px; color:white; border:none; font-weight:bold;">NOWA GRA</button>
-            </div>
+            <h1 id="winner-name"></h1>
+            <button onclick="resetGame()" style="background:var(--win); padding: 15px 30px; border-radius: 10px; color:white; border:none;">ZAGRAJ PONOWNIE</button>
         </div>
         <svg id="dartboard" viewBox="-250 -250 500 500"></svg>
+        <div id="debug-info">ROTATION: 0°</div>
     </div>
 
     <div class="side-panel">
-        <strong style="font-size: 0.8rem; color: #888;">HISTORIA</strong>
-        <div id="history-container" style="flex:1; overflow-y:auto; margin-top:10px; border-top:1px solid #333;">
-            <div id="history-list"></div>
-        </div>
+        <strong style="font-size: 0.8rem;">OSTATNIE TRAFIENIE:</strong>
+        <div id="last-hit" style="font-size: 2rem; text-align: center; margin-top: 10px; color: var(--accent);">---</div>
+        <div id="history-list" style="margin-top:20px; font-size: 0.8rem; overflow-y: auto; flex: 1;"></div>
     </div>
 </div>
 
 <script>
     const svg = document.getElementById('dartboard');
+    const debug = document.getElementById('debug-info');
     const SECTORS = [20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5];
     const R = { doubleOut: 240, doubleIn: 215, tripleOut: 145, tripleIn: 115, bullOuter: 35, bullInner: 15 };
 
     let game = { 
-        mode: 'classic', isSpinning: false, currentRotation: 0, 
-        startScore: 501, currentPlayer: 1, scores: { 1: 501, 2: 501 }, 
-        throws: 0, maxThrows: 3, currentRound: 1, fullHistory: [] 
+        isSpinning: false, currentRotation: 0, 
+        currentPlayer: 1, scores: { 1: 501, 2: 501 }, 
+        throws: 0, mode: 'classic', startScore: 501
     };
 
     function drawBoard() {
@@ -115,8 +111,8 @@
             html += createArc(R.tripleOut, R.doubleIn, start, end, isEven ? "#111" : "#eee");
             html += createArc(R.tripleIn, R.tripleOut, start, end, isEven ? "#e74c3c" : "#27ae60");
             html += createArc(R.bullOuter, R.tripleIn, start, end, isEven ? "#111" : "#eee");
-            const ang = (i*18-90)*Math.PI/180;
-            html += `<text x="${190*Math.cos(ang)}" y="${190*Math.sin(ang)+7}" fill="${isEven ? 'white' : 'black'}" text-anchor="middle" font-size="20" font-weight="bold" style="pointer-events:none;">${SECTORS[i]}</text>`;
+            const ang = (i*18)*Math.PI/180;
+            html += `<text transform="rotate(${i*18}) translate(0, -190)" fill="${isEven ? 'white' : 'black'}" text-anchor="middle" font-size="20" font-weight="bold">${SECTORS[i]}</text>`;
         }
         html += createArc(0, R.bullOuter, 0, 360, "#27ae60");
         html += `<circle r="${R.bullInner}" fill="#e74c3c" />`;
@@ -126,17 +122,16 @@
 
     function animate() {
         if (game.isSpinning) {
-            game.currentRotation = (game.currentRotation + 1.8) % 360; 
+            game.currentRotation = (game.currentRotation + 1.2) % 360; 
             document.getElementById('main-group').setAttribute('transform', `rotate(${game.currentRotation}, 0, 0)`);
+            debug.innerText = `ROTATION: ${Math.floor(game.currentRotation)}°`;
         }
         requestAnimationFrame(animate);
     }
 
     function toggleSpin() {
         game.isSpinning = !game.isSpinning;
-        const btn = document.getElementById('btn-spin');
-        btn.innerText = `SPIN: ${game.isSpinning ? 'ON' : 'OFF'}`;
-        btn.style.background = game.isSpinning ? '#f39c12' : '#9b59b6';
+        document.getElementById('btn-spin').innerText = `SPIN: ${game.isSpinning ? 'ON' : 'OFF'}`;
         if (!game.isSpinning) {
             game.currentRotation = 0;
             document.getElementById('main-group').setAttribute('transform', `rotate(0)`);
@@ -147,110 +142,98 @@
         if (document.getElementById('win-overlay').style.display === 'flex') return;
         
         const rect = svg.getBoundingClientRect();
-        const rawX = (clientX - rect.left) * (500 / rect.width) - 250;
-        const rawY = (clientY - rect.top) * (500 / rect.height) - 250;
+        const x = (clientX - rect.left) * (500 / rect.width) - 250;
+        const y = (clientY - rect.top) * (500 / rect.height) - 250;
         
-        const shotRot = game.currentRotation;
-        const dist = Math.sqrt(rawX*rawX + rawY*rawY);
-        let visAngle = (Math.atan2(rawY, rawX) * 180 / Math.PI + 90 + 360) % 360;
-        let correctedAngle = (visAngle - shotRot + 360) % 360;
+        const dist = Math.sqrt(x*x + y*y);
+        if (dist > 250) return; // Kliknięcie poza tarczą
 
-        let p = 0, label = "Miss";
-        if (dist <= R.bullInner) { p = 50; label = "BULL"; }
-        else if (dist <= R.bullOuter) { p = 25; label = "25"; }
-        else if (dist <= R.doubleOut) {
-            const secIdx = Math.floor(((correctedAngle + 9) % 360) / 18);
-            let mult = 1; label = SECTORS[secIdx];
-            if (dist >= R.doubleIn) { mult = 2; label = "D" + SECTORS[secIdx]; }
-            else if (dist >= R.tripleIn && dist <= R.tripleOut) { mult = 3; label = "T" + SECTORS[secIdx]; }
-            p = SECTORS[secIdx] * mult;
-        }
+        // 1. Oblicz kąt wizualny (gdzie kliknęliśmy na ekranie)
+        // atan2 zwraca radiany, zamieniamy na stopnie. +90 koryguje start od góry (20).
+        let clickAngle = (Math.atan2(y, x) * 180 / Math.PI) + 90;
+        if (clickAngle < 0) clickAngle += 360;
 
-        // KLUCZOWE: Obliczanie lokalnej pozycji WBICIA względem grupy obrotowej
-        const rad = (-shotRot) * Math.PI / 180;
-        const lx = rawX * Math.cos(rad) - rawY * Math.sin(rad);
-        const ly = rawX * Math.sin(rad) + rawY * Math.cos(rad);
+        // 2. Odejmij rotację tarczy, aby znaleźć "kąt na tarczy"
+        let boardAngle = (clickAngle - game.currentRotation) % 360;
+        if (boardAngle < 0) boardAngle += 360;
+
+        // 3. Znajdź sektor (każdy ma 18 stopni, sektor 20 zaczyna się 9 stopni przed zerem)
+        const sectorIndex = Math.floor(((boardAngle + 9) % 360) / 18);
+        const pointsBase = SECTORS[sectorIndex];
+
+        let multiplier = 1;
+        let label = pointsBase.toString();
+
+        if (dist <= R.bullInner) { multiplier = 0; label = "BULL (50)"; game.currentPoints = 50; }
+        else if (dist <= R.bullOuter) { multiplier = 0; label = "25"; game.currentPoints = 25; }
+        else if (dist > R.doubleOut) { multiplier = 0; label = "0"; game.currentPoints = 0; }
+        else if (dist >= R.doubleIn) { multiplier = 2; label = "D" + pointsBase; }
+        else if (dist >= R.tripleIn && dist <= R.tripleOut) { multiplier = 3; label = "T" + pointsBase; }
         
-        // Tworzymy marker fizycznie i wpinamy go do tarczy
+        const totalPoints = multiplier === 0 ? game.currentPoints : pointsBase * multiplier;
+
+        // 4. Pozycja markera (musi być w układzie lokalnym tarczy)
+        const radLocal = (boardAngle - 90) * Math.PI / 180;
+        const lx = dist * Math.cos(radLocal);
+        const ly = dist * Math.sin(radLocal);
+
+        placeMarker(lx, ly);
+        handleScore(totalPoints, label);
+    }
+
+    function placeMarker(lx, ly) {
         const m = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-        m.setAttribute("cx", lx); m.setAttribute("cy", ly); m.setAttribute("r", "6");
+        m.setAttribute("cx", lx); m.setAttribute("cy", ly); m.setAttribute("r", "5");
         m.setAttribute("class", "marker");
         m.setAttribute("fill", game.currentPlayer === 1 ? 'var(--p1)' : 'var(--p2)');
         document.getElementById('m-layer').appendChild(m);
-
-        handleLogic(p, label);
     }
 
-    function handleLogic(p, label) {
-        const isBust = (game.mode === 'classic' && (game.scores[game.currentPlayer] - p < 0 || game.scores[game.currentPlayer] - p === 1));
-        
-        if (game.mode === 'classic' && !isBust) {
-            game.scores[game.currentPlayer] -= p;
-            if (game.scores[game.currentPlayer] === 0) return showWin(game.currentPlayer);
-        } else if (game.mode === 'battle') {
-            game.scores[game.currentPlayer] += p;
-        }
-
-        game.fullHistory.push({ player: game.currentPlayer, points: p, label });
+    function handleScore(p, label) {
+        game.scores[game.currentPlayer] -= p;
         game.throws++;
         
+        document.getElementById('last-hit').innerText = label;
         document.getElementById('p1-score').innerText = game.scores[1];
         document.getElementById('p2-score').innerText = game.scores[2];
         document.getElementById('throws-count').innerText = game.throws;
 
-        const hist = document.getElementById('history-list');
-        hist.innerHTML = `<div style="padding:5px; border-bottom:1px solid #333; font-size:0.8rem">G${game.currentPlayer}: ${label} (${p})</div>` + hist.innerHTML;
-
-        if (game.throws >= game.maxThrows) {
-            setTimeout(nextTurn, 1000);
+        if (game.scores[game.currentPlayer] <= 0) {
+            showWin(game.currentPlayer);
+        } else if (game.throws >= 3) {
+            setTimeout(nextTurn, 800);
         }
     }
 
     function nextTurn() {
-        document.getElementById('m-layer').innerHTML = ''; // Czyścimy lotki przy zmianie tury
-        if (game.mode === 'battle' && game.currentPlayer === 2) {
-            if (game.currentRound >= 3) {
-                const w = game.scores[1] > game.scores[2] ? 1 : (game.scores[2] > game.scores[1] ? 2 : 0);
-                return showWin(w);
-            }
-            game.currentRound++;
-        }
         game.throws = 0;
         game.currentPlayer = game.currentPlayer === 1 ? 2 : 1;
+        document.getElementById('m-layer').innerHTML = '';
         document.getElementById('throws-count').innerText = "0";
-        document.getElementById('p1-card').className = 'player-card' + (game.currentPlayer === 1 ? ' active' : '');
-        document.getElementById('p2-card').className = 'player-card' + (game.currentPlayer === 2 ? ' active' : '');
+        document.getElementById('p1-card').classList.toggle('active');
+        document.getElementById('p2-card').classList.toggle('active');
     }
 
-    function showWin(player) {
+    function showWin(p) {
         document.getElementById('win-overlay').style.display = 'flex';
-        document.getElementById('winner-name').innerText = player === 0 ? "REMIS" : `GRACZ ${player} WYGRYWA!`;
-        document.getElementById('winner-stats').innerText = `${game.scores[1]} - ${game.scores[2]}`;
+        document.getElementById('winner-name').innerText = `GRACZ ${p} WYGRYWA!`;
     }
 
     function resetGame() {
+        game.scores = {1: 501, 2: 501};
+        game.throws = 0;
+        game.currentPlayer = 1;
         document.getElementById('win-overlay').style.display = 'none';
         document.getElementById('m-layer').innerHTML = '';
-        document.getElementById('history-list').innerHTML = '';
-        game.currentPlayer = 1; game.throws = 0; game.currentRound = 1;
-        game.scores = { 1: game.mode === 'classic' ? game.startScore : 0, 2: game.mode === 'classic' ? game.startScore : 0 };
-        document.getElementById('p1-score').innerText = game.scores[1];
-        document.getElementById('p2-score').innerText = game.scores[2];
-        document.getElementById('throws-count').innerText = "0";
-        document.getElementById('p1-card').className = 'player-card active';
-        document.getElementById('p2-card').className = 'player-card';
+        document.getElementById('p1-score').innerText = '501';
+        document.getElementById('p2-score').innerText = '501';
+        document.getElementById('throws-count').innerText = '0';
     }
 
-    function setGameMode(mode) { game.mode = mode; resetGame(); }
-    function setStartScore(val) { game.startScore = val; resetGame(); }
+    function setGameMode(m) { game.mode = m; resetGame(); }
 
     svg.addEventListener('mousedown', (e) => processShot(e.clientX, e.clientY));
-    svg.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        processShot(e.touches[0].clientX, e.touches[0].clientY);
-    }, {passive: false});
-
-    drawBoard(); resetGame(); animate();
+    drawBoard(); animate();
 </script>
 </body>
 </html>
