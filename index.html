@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Dart Pro - Spin Master Fixed</title>
+    <title>Dart Pro - Spin Fixed</title>
     <style>
         :root {
             --bg: #0f1215; --panel: #1c2229; --accent: #00d2ff;
@@ -14,6 +14,7 @@
             margin: 0; padding: 0; background: var(--bg); color: white;
             font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column;
             height: 100vh; width: 100vw; overflow: hidden;
+            user-select: none; -webkit-user-select: none; /* Blokada zaznaczania */
         }
 
         header {
@@ -28,7 +29,7 @@
         #board-container { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
         
         #dartboard { 
-            max-height: 100%; max-width: 100%; aspect-ratio: 1/1; 
+            max-height: 95%; max-width: 95%; aspect-ratio: 1/1; 
             touch-action: none; filter: drop-shadow(0 0 20px rgba(0,0,0,0.5));
         }
 
@@ -38,14 +39,12 @@
             display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 100;
         }
 
-        .win-card { background: var(--panel); padding: 40px; border-radius: 20px; text-align: center; border: 2px solid var(--win); animation: popIn 0.5s ease; }
-        .win-name { font-size: 3rem; font-weight: 900; margin: 10px 0; }
+        .win-card { background: var(--panel); padding: 40px; border-radius: 20px; text-align: center; border: 2px solid var(--win); }
         
-        @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-
         .player-card { padding: 12px; border-radius: 8px; margin-bottom: 8px; border-left: 5px solid transparent; background: #252d37; opacity: 0.6; }
         .player-card.active { opacity: 1; border-left-color: var(--accent); background: #2d3a4a; }
         .score-val { font-size: 2.8rem; font-weight: 900; line-height: 1; }
+        
         #history-container { flex: 1; overflow-y: auto; margin-top: 10px; border-top: 1px solid #333; }
         .hist-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #2d3640; font-size: 0.8rem; }
         
@@ -53,9 +52,9 @@
         button { background: #2d3640; border: none; color: white; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; }
         button.active-opt { background: var(--accent); color: black; }
         .btn-spin { background: #9b59b6; }
-        .btn-spin.active-opt { background: #d35400; color: white; }
+        .btn-spin.active-opt { background: #f39c12; }
 
-        .marker { fill: #fff; stroke: #000; stroke-width: 1.5; filter: drop-shadow(0 0 2px rgba(0,0,0,0.8)); }
+        .marker { fill: #fff; stroke: #000; stroke-width: 1.5; pointer-events: none; }
 
         @media (max-width: 1000px) { #game-wrapper { flex-direction: column; } .side-panel { flex: none; width: 100%; max-height: 200px; } }
     </style>
@@ -66,7 +65,7 @@
     <div class="btn-group">
         <button id="mode-classic" class="active-opt" onclick="setGameMode('classic')">Klasyczny</button>
         <button id="mode-battle" onclick="setGameMode('battle')">Bitwa 1vs1</button>
-        <button id="btn-spin" class="btn-spin" onclick="toggleSpin()">TRYB SPIN: OFF</button>
+        <button id="btn-spin" class="btn-spin" onclick="toggleSpin()">SPIN: OFF</button>
     </div>
     
     <div id="classic-scores" class="btn-group">
@@ -94,9 +93,9 @@
     <div id="board-container">
         <div id="win-overlay">
             <div class="win-card">
-                <div id="winner-name" class="win-name">GRACZ 1</div>
+                <div id="winner-name" style="font-size: 3rem; font-weight: 900; margin-bottom: 10px;">GRACZ 1</div>
                 <div id="winner-stats" style="font-size: 1.5rem; color: #888; margin-bottom: 20px;"></div>
-                <button onclick="resetGame()" style="background:var(--win); padding: 15px 30px; border-radius: 10px; color: white;">ZAGRAJ PONOWNIE</button>
+                <button onclick="resetGame()" style="background:var(--win); padding: 15px 30px; border-radius: 10px; color: white; font-weight: bold; border:none;">ZAGRAJ PONOWNIE</button>
             </div>
         </div>
         <svg id="dartboard" viewBox="-250 -250 500 500"></svg>
@@ -128,28 +127,32 @@
             path.setAttribute("d", `M${s1.x},${s1.y} A${r1},${r1} 0 0 1 ${e1.x},${e1.y} L${e2.x},${e2.y} A${r2},${r2} 0 0 0 ${s2.x},${s2.y} Z`);
             path.setAttribute("fill", fill); path.setAttribute("stroke", "#222"); return path;
         };
+
         const bg = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-        bg.setAttribute("r", "250"); bg.setAttribute("fill", "black"); svg.appendChild(bg);
+        bg.setAttribute("r", "250"); bg.setAttribute("fill", "#000"); svg.appendChild(bg);
         
         const g = document.createElementNS("http://www.w3.org/2000/svg", "g"); g.id = "main-group";
+        
         for (let i = 0; i < 20; i++) {
             const start = i * 18 - 9, end = (i + 1) * 18 - 9, isEven = i % 2 === 0;
             g.appendChild(createArc(R.doubleIn, R.doubleOut, start, end, isEven ? "#e74c3c" : "#27ae60"));
             g.appendChild(createArc(R.tripleOut, R.doubleIn, start, end, isEven ? "#111" : "#eee"));
             g.appendChild(createArc(R.tripleIn, R.tripleOut, start, end, isEven ? "#e74c3c" : "#27ae60"));
             g.appendChild(createArc(R.bullOuter, R.tripleIn, start, end, isEven ? "#111" : "#eee"));
+            
             const ang = (i*18-90)*Math.PI/180;
             const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
             text.setAttribute("x", 190*Math.cos(ang)); text.setAttribute("y", 190*Math.sin(ang)+7);
             text.setAttribute("fill", isEven ? "white" : "black"); text.setAttribute("text-anchor", "middle");
             text.setAttribute("font-size", "20"); text.setAttribute("font-weight", "bold");
+            text.setAttribute("style", "pointer-events: none;");
             text.textContent = SECTORS[i]; g.appendChild(text);
         }
+        
         g.appendChild(createArc(0, R.bullOuter, 0, 360, "#27ae60"));
         const b50 = document.createElementNS("http://www.w3.org/2000/svg", "circle");
         b50.setAttribute("r", R.bullInner); b50.setAttribute("fill", "#e74c3c"); g.appendChild(b50);
         
-        // WARSTWA RZUTEK WEWNĄTRZ OBROTOWEJ GRUPY
         const ml = document.createElementNS("http://www.w3.org/2000/svg", "g"); ml.id = "m-layer"; 
         g.appendChild(ml);
         
@@ -159,7 +162,7 @@
     function animate() {
         if (game.isSpinning) {
             game.currentRotation = (game.currentRotation + 1.2) % 360; 
-            document.getElementById('main-group').setAttribute('transform', `rotate(${game.currentRotation})`);
+            document.getElementById('main-group').setAttribute('transform', `rotate(${game.currentRotation}, 0, 0)`);
         }
         requestAnimationFrame(animate);
     }
@@ -167,7 +170,7 @@
     function toggleSpin() {
         game.isSpinning = !game.isSpinning;
         const btn = document.getElementById('btn-spin');
-        btn.innerText = `TRYB SPIN: ${game.isSpinning ? 'ON' : 'OFF'}`;
+        btn.innerText = `SPIN: ${game.isSpinning ? 'ON' : 'OFF'}`;
         btn.classList.toggle('active-opt');
         if (!game.isSpinning) {
             game.currentRotation = 0;
@@ -177,15 +180,19 @@
 
     function processShot(clientX, clientY) {
         if (document.getElementById('win-overlay').style.display === 'flex') return;
-        const rect = svg.getBoundingClientRect();
-        const x = (clientX - rect.left) * (500 / rect.width) - 250;
-        const y = (clientY - rect.top) * (500 / rect.height) - 250;
-        const dist = Math.sqrt(x*x + y*y);
         
-        let visualAngle = (Math.atan2(y, x) * 180 / Math.PI + 90 + 360) % 360;
-        let correctedAngle = (visualAngle - game.currentRotation + 360) % 360;
+        const rect = svg.getBoundingClientRect();
+        const rawX = (clientX - rect.left) * (500 / rect.width) - 250;
+        const rawY = (clientY - rect.top) * (500 / rect.height) - 250;
+        
+        // MOMENTALNE ZAMROŻENIE ROTACJI DO OBLICZEŃ
+        const rotationAtShot = game.currentRotation;
+        const dist = Math.sqrt(rawX*rawX + rawY*rawY);
+        
+        let visualAngle = (Math.atan2(rawY, rawX) * 180 / Math.PI + 90 + 360) % 360;
+        let correctedAngle = (visualAngle - rotationAtShot + 360) % 360;
 
-        let p = 0, label = "Pudło";
+        let p = 0, label = "Miss";
         if (dist <= R.bullInner) { p = 50; label = "BULL"; }
         else if (dist <= R.bullOuter) { p = 25; label = "25"; }
         else if (dist <= R.doubleOut) {
@@ -196,10 +203,10 @@
             p = SECTORS[secIdx] * mult;
         }
 
-        // OBLICZANIE LOKALNYCH WSPÓŁRZĘDNYCH DLA MARKERA (by obracał się z tarczą)
-        const rad = (-game.currentRotation) * Math.PI / 180;
-        const localX = x * Math.cos(rad) - y * Math.sin(rad);
-        const localY = x * Math.sin(rad) + y * Math.cos(rad);
+        // PRZELICZENIE WSPÓŁRZĘDNYCH DO WARSTWY OBROTOWEJ (Wbicie lotki)
+        const rad = (-rotationAtShot) * Math.PI / 180;
+        const localX = rawX * Math.cos(rad) - rawY * Math.sin(rad);
+        const localY = rawX * Math.sin(rad) + rawY * Math.cos(rad);
         
         handleLogic(p, label, localX, localY);
     }
@@ -212,7 +219,7 @@
             if (!isBust) {
                 game.scores[game.currentPlayer] -= p;
                 if (game.scores[game.currentPlayer] === 0) return showWin(game.currentPlayer);
-            } else { game.throws = 2; }
+            }
         } else { game.scores[game.currentPlayer] += p; }
 
         game.throws++;
@@ -222,7 +229,9 @@
 
     function showWin(player) {
         document.getElementById('win-overlay').style.display = 'flex';
-        document.getElementById('winner-name').innerText = player === 0 ? "REMIS" : `GRACZ ${player}`;
+        const winName = document.getElementById('winner-name');
+        winName.innerText = player === 0 ? "REMIS" : `GRACZ ${player}`;
+        winName.style.color = player === 1 ? 'var(--p1)' : (player === 2 ? 'var(--p2)' : '#fff');
         document.getElementById('winner-stats').innerText = `${game.scores[1]} - ${game.scores[2]}`;
     }
 
@@ -257,10 +266,9 @@
 
         const mLayer = document.getElementById('m-layer');
         mLayer.innerHTML = '';
-        // Pokazujemy tylko rzutki z obecnej tury
         game.fullHistory.filter(h => h.player === game.currentPlayer && h.round === game.currentRound).forEach(s => {
             const m = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-            m.setAttribute("cx", s.lx); m.setAttribute("cy", s.ly); m.setAttribute("r", "5");
+            m.setAttribute("cx", s.lx); m.setAttribute("cy", s.ly); m.setAttribute("r", "6");
             m.setAttribute("class", "marker"); mLayer.appendChild(m);
         });
     }
@@ -283,7 +291,11 @@
         resetGame();
     }
 
-    function setStartScore(val) { game.startScore = val; resetGame(); }
+    function setStartScore(val) { 
+        game.startScore = val; 
+        document.querySelectorAll('.score-opt').forEach(b => b.classList.toggle('active-opt', parseInt(b.innerText) === val));
+        resetGame(); 
+    }
 
     function resetGame() {
         document.getElementById('win-overlay').style.display = 'none';
@@ -294,6 +306,12 @@
     }
 
     svg.addEventListener('mousedown', (e) => processShot(e.clientX, e.clientY));
+    svg.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        const touch = e.touches[0];
+        processShot(touch.clientX, touch.clientY);
+    }, {passive: false});
+
     drawBoard(); resetGame(); animate();
 </script>
 </body>
