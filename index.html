@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Dart Pro - Spin Fixed</title>
+    <title>Dart Pro - Spin Tracker</title>
     <style>
         :root {
             --bg: #0f1215; --panel: #1c2229; --accent: #00d2ff;
@@ -13,25 +13,28 @@
         body {
             margin: 0; padding: 0; background: var(--bg); color: white;
             font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column;
-            height: 100vh; width: 100vw; overflow: hidden;
-            user-select: none; -webkit-user-select: none; /* Blokada zaznaczania */
+            height: 100vh; width: 100vw; overflow: hidden; user-select: none;
         }
 
         header {
             flex: 0 0 auto; background: var(--panel); padding: 10px 20px; 
             display: flex; justify-content: space-between; align-items: center; 
-            border-bottom: 2px solid #2d3640; z-index: 10; gap: 10px;
+            border-bottom: 2px solid #2d3640; z-index: 10;
         }
 
-        #game-wrapper { flex: 1; display: flex; width: 100%; padding: 10px; box-sizing: border-box; gap: 10px; min-height: 0; }
+        #game-wrapper { flex: 1; display: flex; padding: 10px; gap: 10px; min-height: 0; }
         .side-panel { flex: 0 0 240px; background: var(--panel); padding: 15px; border-radius: 12px; display: flex; flex-direction: column; }
 
-        #board-container { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+        #board-container { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; }
+        #dartboard { max-height: 95%; max-width: 95%; aspect-ratio: 1/1; touch-action: none; }
+
+        .player-card { padding: 12px; border-radius: 8px; margin-bottom: 8px; border-left: 5px solid transparent; background: #252d37; opacity: 0.5; transition: 0.3s; }
+        .player-card.active { opacity: 1; border-left-color: var(--accent); background: #2d3a4a; transform: scale(1.02); }
+        .score-val { font-size: 2.8rem; font-weight: 900; }
         
-        #dartboard { 
-            max-height: 95%; max-width: 95%; aspect-ratio: 1/1; 
-            touch-action: none; filter: drop-shadow(0 0 20px rgba(0,0,0,0.5));
-        }
+        .marker { stroke: #000; stroke-width: 1.5; filter: drop-shadow(0 0 2px rgba(0,0,0,0.5)); pointer-events: none; }
+        .marker-p1 { fill: var(--p1); }
+        .marker-p2 { fill: var(--p2); }
 
         #win-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -39,24 +42,11 @@
             display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 100;
         }
 
-        .win-card { background: var(--panel); padding: 40px; border-radius: 20px; text-align: center; border: 2px solid var(--win); }
-        
-        .player-card { padding: 12px; border-radius: 8px; margin-bottom: 8px; border-left: 5px solid transparent; background: #252d37; opacity: 0.6; }
-        .player-card.active { opacity: 1; border-left-color: var(--accent); background: #2d3a4a; }
-        .score-val { font-size: 2.8rem; font-weight: 900; line-height: 1; }
-        
-        #history-container { flex: 1; overflow-y: auto; margin-top: 10px; border-top: 1px solid #333; }
-        .hist-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #2d3640; font-size: 0.8rem; }
-        
         .btn-group { display: flex; gap: 5px; }
         button { background: #2d3640; border: none; color: white; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; }
         button.active-opt { background: var(--accent); color: black; }
-        .btn-spin { background: #9b59b6; }
-        .btn-spin.active-opt { background: #f39c12; }
-
-        .marker { fill: #fff; stroke: #000; stroke-width: 1.5; pointer-events: none; }
-
-        @media (max-width: 1000px) { #game-wrapper { flex-direction: column; } .side-panel { flex: none; width: 100%; max-height: 200px; } }
+        
+        @media (max-width: 1000px) { #game-wrapper { flex-direction: column; } .side-panel { flex: none; width: 100%; } }
     </style>
 </head>
 <body>
@@ -65,9 +55,8 @@
     <div class="btn-group">
         <button id="mode-classic" class="active-opt" onclick="setGameMode('classic')">Klasyczny</button>
         <button id="mode-battle" onclick="setGameMode('battle')">Bitwa 1vs1</button>
-        <button id="btn-spin" class="btn-spin" onclick="toggleSpin()">SPIN: OFF</button>
+        <button id="btn-spin" style="background:#9b59b6;" onclick="toggleSpin()">SPIN: OFF</button>
     </div>
-    
     <div id="classic-scores" class="btn-group">
         <button class="score-opt" onclick="setStartScore(301)">301</button>
         <button class="score-opt active-opt" onclick="setStartScore(501)">501</button>
@@ -84,26 +73,29 @@
             <small style="color:var(--p2)">GRACZ 2</small>
             <div id="p2-score" class="score-val">501</div>
         </div>
-        <div style="text-align:center; padding: 10px; background: #111; border-radius: 5px;">
-            RZUTY: <span id="throws-count">0</span> / <span id="max-throws">3</span>
+        <div style="text-align:center; padding: 10px; background: #111; border-radius: 5px; margin-top: auto;">
+            RZUTY W TURZE: <span id="throws-count" style="color:var(--accent); font-size: 1.2rem;">0</span> / <span id="max-throws">3</span>
         </div>
-        <button onclick="undoLastMove()" style="background:#e74c3c; margin-top:10px;">Cofnij</button>
+        <button onclick="undoLastMove()" style="background:#e74c3c; margin-top:10px;">Cofnij rzut</button>
+        <button onclick="resetGame()" style="background:#444; margin-top:5px;">Restart</button>
     </div>
 
     <div id="board-container">
         <div id="win-overlay">
-            <div class="win-card">
-                <div id="winner-name" style="font-size: 3rem; font-weight: 900; margin-bottom: 10px;">GRACZ 1</div>
-                <div id="winner-stats" style="font-size: 1.5rem; color: #888; margin-bottom: 20px;"></div>
-                <button onclick="resetGame()" style="background:var(--win); padding: 15px 30px; border-radius: 10px; color: white; font-weight: bold; border:none;">ZAGRAJ PONOWNIE</button>
+            <div style="text-align:center; background:var(--panel); padding:40px; border-radius:20px; border:2px solid var(--win);">
+                <div id="winner-name" style="font-size: 3rem; font-weight: 900;"></div>
+                <div id="winner-stats" style="font-size: 1.5rem; color: #888; margin: 20px 0;"></div>
+                <button onclick="resetGame()" style="background:var(--win); padding: 15px 30px; border-radius:10px; color:white; border:none; font-weight:bold;">NOWA GRA</button>
             </div>
         </div>
         <svg id="dartboard" viewBox="-250 -250 500 500"></svg>
     </div>
 
     <div class="side-panel">
-        <strong style="font-size: 0.8rem; color: #888;">HISTORIA</strong>
-        <div id="history-container"><div id="history-list"></div></div>
+        <strong style="font-size: 0.8rem; color: #888;">HISTORIA TRAFIEŃ</strong>
+        <div id="history-container" style="flex:1; overflow-y:auto; margin-top:10px; border-top:1px solid #333;">
+            <div id="history-list"></div>
+        </div>
     </div>
 </div>
 
@@ -123,45 +115,28 @@
             const rad = (d) => (d - 90) * Math.PI / 180;
             const s1 = {x: r1*Math.cos(rad(start)), y: r1*Math.sin(rad(start))}, e1 = {x: r1*Math.cos(rad(end)), y: r1*Math.sin(rad(end))};
             const s2 = {x: r2*Math.cos(rad(start)), y: r2*Math.sin(rad(start))}, e2 = {x: r2*Math.cos(rad(end)), y: r2*Math.sin(rad(end))};
-            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-            path.setAttribute("d", `M${s1.x},${s1.y} A${r1},${r1} 0 0 1 ${e1.x},${e1.y} L${e2.x},${e2.y} A${r2},${r2} 0 0 0 ${s2.x},${s2.y} Z`);
-            path.setAttribute("fill", fill); path.setAttribute("stroke", "#222"); return path;
+            return `<path d="M${s1.x},${s1.y} A${r1},${r1} 0 0 1 ${e1.x},${e1.y} L${e2.x},${e2.y} A${r2},${r2} 0 0 0 ${s2.x},${s2.y} Z" fill="${fill}" stroke="#222" />`;
         };
 
-        const bg = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-        bg.setAttribute("r", "250"); bg.setAttribute("fill", "#000"); svg.appendChild(bg);
-        
-        const g = document.createElementNS("http://www.w3.org/2000/svg", "g"); g.id = "main-group";
-        
+        let boardHtml = `<circle r="250" fill="black" /> <g id="main-group">`;
         for (let i = 0; i < 20; i++) {
             const start = i * 18 - 9, end = (i + 1) * 18 - 9, isEven = i % 2 === 0;
-            g.appendChild(createArc(R.doubleIn, R.doubleOut, start, end, isEven ? "#e74c3c" : "#27ae60"));
-            g.appendChild(createArc(R.tripleOut, R.doubleIn, start, end, isEven ? "#111" : "#eee"));
-            g.appendChild(createArc(R.tripleIn, R.tripleOut, start, end, isEven ? "#e74c3c" : "#27ae60"));
-            g.appendChild(createArc(R.bullOuter, R.tripleIn, start, end, isEven ? "#111" : "#eee"));
-            
+            boardHtml += createArc(R.doubleIn, R.doubleOut, start, end, isEven ? "#e74c3c" : "#27ae60");
+            boardHtml += createArc(R.tripleOut, R.doubleIn, start, end, isEven ? "#111" : "#eee");
+            boardHtml += createArc(R.tripleIn, R.tripleOut, start, end, isEven ? "#e74c3c" : "#27ae60");
+            boardHtml += createArc(R.bullOuter, R.tripleIn, start, end, isEven ? "#111" : "#eee");
             const ang = (i*18-90)*Math.PI/180;
-            const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
-            text.setAttribute("x", 190*Math.cos(ang)); text.setAttribute("y", 190*Math.sin(ang)+7);
-            text.setAttribute("fill", isEven ? "white" : "black"); text.setAttribute("text-anchor", "middle");
-            text.setAttribute("font-size", "20"); text.setAttribute("font-weight", "bold");
-            text.setAttribute("style", "pointer-events: none;");
-            text.textContent = SECTORS[i]; g.appendChild(text);
+            boardHtml += `<text x="${190*Math.cos(ang)}" y="${190*Math.sin(ang)+7}" fill="${isEven ? 'white' : 'black'}" text-anchor="middle" font-size="20" font-weight="bold" style="pointer-events:none;">${SECTORS[i]}</text>`;
         }
-        
-        g.appendChild(createArc(0, R.bullOuter, 0, 360, "#27ae60"));
-        const b50 = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-        b50.setAttribute("r", R.bullInner); b50.setAttribute("fill", "#e74c3c"); g.appendChild(b50);
-        
-        const ml = document.createElementNS("http://www.w3.org/2000/svg", "g"); ml.id = "m-layer"; 
-        g.appendChild(ml);
-        
-        svg.appendChild(g);
+        boardHtml += createArc(0, R.bullOuter, 0, 360, "#27ae60");
+        boardHtml += `<circle r="${R.bullInner}" fill="#e74c3c" />`;
+        boardHtml += `<g id="m-layer"></g> </g>`; // m-layer jest wewnątrz main-group!
+        svg.innerHTML = boardHtml;
     }
 
     function animate() {
         if (game.isSpinning) {
-            game.currentRotation = (game.currentRotation + 1.2) % 360; 
+            game.currentRotation = (game.currentRotation + 1.5) % 360; 
             document.getElementById('main-group').setAttribute('transform', `rotate(${game.currentRotation}, 0, 0)`);
         }
         requestAnimationFrame(animate);
@@ -171,7 +146,7 @@
         game.isSpinning = !game.isSpinning;
         const btn = document.getElementById('btn-spin');
         btn.innerText = `SPIN: ${game.isSpinning ? 'ON' : 'OFF'}`;
-        btn.classList.toggle('active-opt');
+        btn.style.background = game.isSpinning ? '#f39c12' : '#9b59b6';
         if (!game.isSpinning) {
             game.currentRotation = 0;
             document.getElementById('main-group').setAttribute('transform', `rotate(0)`);
@@ -180,17 +155,14 @@
 
     function processShot(clientX, clientY) {
         if (document.getElementById('win-overlay').style.display === 'flex') return;
-        
         const rect = svg.getBoundingClientRect();
         const rawX = (clientX - rect.left) * (500 / rect.width) - 250;
         const rawY = (clientY - rect.top) * (500 / rect.height) - 250;
         
-        // MOMENTALNE ZAMROŻENIE ROTACJI DO OBLICZEŃ
-        const rotationAtShot = game.currentRotation;
+        const shotRotation = game.currentRotation;
         const dist = Math.sqrt(rawX*rawX + rawY*rawY);
-        
         let visualAngle = (Math.atan2(rawY, rawX) * 180 / Math.PI + 90 + 360) % 360;
-        let correctedAngle = (visualAngle - rotationAtShot + 360) % 360;
+        let correctedAngle = (visualAngle - shotRotation + 360) % 360;
 
         let p = 0, label = "Miss";
         if (dist <= R.bullInner) { p = 50; label = "BULL"; }
@@ -203,12 +175,11 @@
             p = SECTORS[secIdx] * mult;
         }
 
-        // PRZELICZENIE WSPÓŁRZĘDNYCH DO WARSTWY OBROTOWEJ (Wbicie lotki)
-        const rad = (-rotationAtShot) * Math.PI / 180;
-        const localX = rawX * Math.cos(rad) - rawY * Math.sin(rad);
-        const localY = rawX * Math.sin(rad) + rawY * Math.cos(rad);
+        const rad = (-shotRotation) * Math.PI / 180;
+        const lx = rawX * Math.cos(rad) - rawY * Math.sin(rad);
+        const ly = rawX * Math.sin(rad) + rawY * Math.cos(rad);
         
-        handleLogic(p, label, localX, localY);
+        handleLogic(p, label, lx, ly);
     }
 
     function handleLogic(p, label, lx, ly) {
@@ -224,15 +195,12 @@
 
         game.throws++;
         updateUI();
-        if (game.throws >= game.maxThrows) setTimeout(nextTurn, 600);
-    }
-
-    function showWin(player) {
-        document.getElementById('win-overlay').style.display = 'flex';
-        const winName = document.getElementById('winner-name');
-        winName.innerText = player === 0 ? "REMIS" : `GRACZ ${player}`;
-        winName.style.color = player === 1 ? 'var(--p1)' : (player === 2 ? 'var(--p2)' : '#fff');
-        document.getElementById('winner-stats').innerText = `${game.scores[1]} - ${game.scores[2]}`;
+        if (game.throws >= game.maxThrows) {
+            setTimeout(() => {
+                document.getElementById('m-layer').innerHTML = ''; // Czyścimy markery przed zmianą gracza
+                nextTurn();
+            }, 1000); // Dajemy 1 sekundę na podejrzenie ostatniego rzutu
+        }
     }
 
     function nextTurn() {
@@ -243,7 +211,8 @@
             }
             game.currentRound++;
         }
-        game.throws = 0; game.currentPlayer = game.currentPlayer === 1 ? 2 : 1;
+        game.throws = 0;
+        game.currentPlayer = game.currentPlayer === 1 ? 2 : 1;
         updateUI();
     }
 
@@ -251,36 +220,30 @@
         document.getElementById('p1-score').innerText = game.scores[1];
         document.getElementById('p2-score').innerText = game.scores[2];
         document.getElementById('throws-count').innerText = game.throws;
-        document.getElementById('max-throws').innerText = game.maxThrows;
         document.getElementById('p1-card').className = 'player-card' + (game.currentPlayer === 1 ? ' active' : '');
         document.getElementById('p2-card').className = 'player-card' + (game.currentPlayer === 2 ? ' active' : '');
         
         const list = document.getElementById('history-list');
         list.innerHTML = '';
         [...game.fullHistory].reverse().forEach(s => {
-            const row = document.createElement('div');
-            row.className = 'hist-row';
-            row.innerHTML = `<span>G${s.player} (R${s.round}): ${s.label}</span><span>${game.mode === 'classic' ? '-' : '+'}${s.points}</span>`;
-            list.appendChild(row);
+            list.innerHTML += `<div class="hist-row"><span>G${s.player}: ${s.label}</span><span>${game.mode === 'classic' ? '-' : '+'}${s.points}</span></div>`;
         });
 
+        // Rysujemy markery TYLKO dla obecnej tury, żeby wiedzieć gdzie się trafiło
         const mLayer = document.getElementById('m-layer');
         mLayer.innerHTML = '';
         game.fullHistory.filter(h => h.player === game.currentPlayer && h.round === game.currentRound).forEach(s => {
             const m = document.createElementNS("http://www.w3.org/2000/svg", "circle");
             m.setAttribute("cx", s.lx); m.setAttribute("cy", s.ly); m.setAttribute("r", "6");
-            m.setAttribute("class", "marker"); mLayer.appendChild(m);
+            m.setAttribute("class", `marker marker-p${s.player}`);
+            mLayer.appendChild(m);
         });
     }
 
-    function undoLastMove() {
-        if (game.fullHistory.length === 0) return;
-        const last = game.fullHistory.pop();
-        if (last.player !== game.currentPlayer) { game.currentPlayer = last.player; game.currentRound = last.round; }
-        if (game.mode === 'classic') { if (!last.isBust) game.scores[last.player] += last.points; }
-        else { game.scores[last.player] -= last.points; }
-        game.throws--; if (game.throws < 0) game.throws = game.maxThrows - 1;
-        updateUI();
+    function showWin(player) {
+        document.getElementById('win-overlay').style.display = 'flex';
+        document.getElementById('winner-name').innerText = player === 0 ? "REMIS" : `WYGRYWA GRACZ ${player}`;
+        document.getElementById('winner-stats').innerText = `Wynik końcowy: ${game.scores[1]} - ${game.scores[2]}`;
     }
 
     function setGameMode(mode) {
@@ -291,25 +254,21 @@
         resetGame();
     }
 
-    function setStartScore(val) { 
-        game.startScore = val; 
-        document.querySelectorAll('.score-opt').forEach(b => b.classList.toggle('active-opt', parseInt(b.innerText) === val));
-        resetGame(); 
-    }
-
     function resetGame() {
         document.getElementById('win-overlay').style.display = 'none';
         game.currentPlayer = 1; game.throws = 0; game.currentRound = 1; game.fullHistory = [];
         if (game.mode === 'classic') { game.scores = { 1: game.startScore, 2: game.startScore }; game.maxThrows = 3; }
         else { game.scores = { 1: 0, 2: 0 }; game.maxThrows = 5; }
+        document.getElementById('m-layer').innerHTML = '';
         updateUI();
     }
+
+    function setStartScore(val) { game.startScore = val; resetGame(); }
 
     svg.addEventListener('mousedown', (e) => processShot(e.clientX, e.clientY));
     svg.addEventListener('touchstart', (e) => {
         e.preventDefault();
-        const touch = e.touches[0];
-        processShot(touch.clientX, touch.clientY);
+        processShot(e.touches[0].clientX, e.touches[0].clientY);
     }, {passive: false});
 
     drawBoard(); resetGame(); animate();
